@@ -1,0 +1,86 @@
+package com.wellnessmate.app.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.wellnessmate.app.data.TrackerEntryRequest
+import com.wellnessmate.app.data.TrackerEntryResponse
+import com.wellnessmate.app.data.TrackerRepository
+import com.wellnessmate.app.data.TrackerTypeResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+data class TrackerUiState(
+    val loading: Boolean = true,
+    val saving: Boolean = false,
+    val types: List<TrackerTypeResponse> = emptyList(),
+    val entries: List<TrackerEntryResponse> = emptyList(),
+    val error: String? = null,
+)
+
+/** Owns tracker catalog, history, create/edit, and delete state. @author TODO(team member) */
+class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() {
+    private val _state = MutableStateFlow(TrackerUiState())
+    val state: StateFlow<TrackerUiState> = _state.asStateFlow()
+
+    init {
+        refresh()
+    }
+
+    fun refresh() {
+        _state.value = _state.value.copy(loading = true, error = null)
+        viewModelScope.launch {
+            val types = repository.types()
+            val entries = repository.entries()
+            if (types.isSuccess && entries.isSuccess) {
+                _state.value = TrackerUiState(
+                    loading = false,
+                    types = types.getOrThrow(),
+                    entries = entries.getOrThrow(),
+                )
+            } else {
+                _state.value = _state.value.copy(
+                    loading = false,
+                    error = types.exceptionOrNull()?.message ?: entries.exceptionOrNull()?.message,
+                )
+            }
+        }
+    }
+
+    fun save(id: Long?, request: TrackerEntryRequest, onSaved: () -> Unit) {
+        if (_state.value.saving) return
+        _state.value = _state.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            val result = if (id == null) repository.create(request) else repository.update(id, request)
+            result.fold(
+                onSuccess = {
+                    _state.value = _state.value.copy(saving = false)
+                    refresh()
+                    onSaved()
+                },
+                onFailure = { _state.value = _state.value.copy(saving = false, error = it.message) },
+            )
+        }
+    }
+
+    fun delete(id: Long) {
+        viewModelScope.launch {
+            repository.delete(id).fold(
+                onSuccess = { refresh() },
+                onFailure = { _state.value = _state.value.copy(error = it.message) },
+            )
+        }
+    }
+
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
+    }
+
+    companion object {
+        fun factory(repository: TrackerRepository): ViewModelProvider.Factory = factoryOf {
+            TrackerViewModel(repository)
+        }
+    }
+}

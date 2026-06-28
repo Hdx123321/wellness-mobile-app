@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: wellness-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/wellness_mate?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:wellness}
+    password: ${SPRING_DATASOURCE_PASSWORD:wellness-dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:local-only-secret-change-before-demo}
+    ttl: ${JWT_TTL:PT2H}
+
+ai:
+  base-url: ${LLM_API_BASE_URL:}
+  api-key: ${LLM_API_KEY:}
+  model: ${LLM_MODEL:}
