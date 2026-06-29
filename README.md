@@ -23,17 +23,27 @@ Backend slice B2 built-in trackers are complete:
 - Food, weight, workout, steps, sleep, and water type metadata.
 - JWT-owned tracker entry create, read, update, delete, pagination, type filtering, and date filtering.
 - Type-specific units and validation.
+- A built-in bilingual food catalog with server-calculated calories, protein, carbohydrates, fat, and fiber.
+- Camera-assisted food recognition through a backend-only OpenAI Responses API integration. AI estimates must be reviewed and confirmed before they are saved.
 
 Android core flow is implemented:
 
 - Registration/login, encrypted JWT session restore, first-login onboarding, and logout.
-- Dashboard for the six built-in trackers.
-- Tracker history, filtering, shared create/edit form, delete confirmation, loading, empty, and error states.
+- Home page for the six built-in trackers, with a current-health summary linked to the private health profile.
+- Health profile cards for height, latest weight, BMI, estimated basal metabolism, estimated moderate-intensity heart-rate zone, and weight-goal progress.
+- A scrollable height editor and direct routing from the weight card to the Weight tracker.
+- Per-tracker month calendars, dates-with-data markers, seven-day charts, selected-day summaries, and today-only editing.
+- A dedicated food flow with catalog search, serving weights, automatic nutrient totals, calendar/chart views, and CameraX photo capture.
+- Bottom navigation between trackers and persisted coach chat; active conversations poll for new messages every three seconds.
+- Three primary tabs: Home, AI Advisor, and Coach. The AI advisor persists chat and receives private profile plus recent tracker context through the backend-only Responses API integration.
+- Avatar-based account management for profile access, a persisted daily local-notification reminder, and logout.
+- One global date picker controls the day shown by Home, tracker details, and Food instead of repeating calendars on each tracker screen.
+- A reference-style Food calorie card showing intake, remaining estimated budget, exercise-calorie availability, and carbohydrate/protein/fat progress.
 - Navigation Compose with debug API base URL `http://10.0.2.2:18080/`.
 
-The Android core flow has been interaction-tested on a Pixel 10 Pro API 36.1 AVD: registration, onboarding, tracker create/edit/delete, encrypted session restore, logout, and login all passed.
+The Android core flow has been interaction-tested on a Pixel 10 Pro API 36.1 AVD: registration, onboarding, tracker create/edit/delete, calendar/chart navigation, coach messaging, encrypted session restore, logout, and login all passed.
 
-The project builds successfully, Flyway migrations run against MySQL 8.4, and the containerized health endpoint reports `UP`. Device capabilities, coach chat, and AI recommendations remain later slices.
+The project builds successfully, Flyway migrations run against MySQL 8.4, and the containerized health endpoint reports `UP`. Device capabilities, coach chat, and general AI recommendations remain later slices.
 
 ## Repository layout
 
@@ -59,6 +69,8 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
+To enable food-photo analysis, set `LLM_API_KEY` in the untracked `.env` file. `LLM_MODEL` defaults to `gpt-5.5` and can be overridden for an account that uses another vision-capable model. The key is used only by the backend and must never be embedded in the Android app.
+
 Backend health: `http://localhost:18080/actuator/health`
 
 The project defaults to host port 18080 because port 8080 is occupied in the current development environment. Override `BACKEND_PORT` and Android `-PAPI_BASE_URL` together when using another port.
@@ -79,7 +91,7 @@ Do not commit `.env`, API keys, JWT secrets, APK files, build directories, or da
 
 - Team name, member names, feature ownership, and final authorship mapping.
 - Confirmed Android minimum SDK and final physical-device demo target.
-- LLM provider, model, and backend-only API credentials.
+- A backend-only OpenAI API credential for live food-photo analysis.
 - Decision on optional Python agentic AI.
 
 No health advice produced by this project should be presented as medical diagnosis, prescription, or emergency care.

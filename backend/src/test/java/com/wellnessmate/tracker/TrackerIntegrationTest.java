@@ -43,7 +43,7 @@ class TrackerIntegrationTest {
   @Test
   void createsAndFiltersAllBuiltInTrackerTypes() throws Exception {
     String token = register("alltrackers");
-    createEntry(token, "FOOD", "650", "Lunch");
+    createFoodEntry(token);
     createEntry(token, "WEIGHT", "72.4", null);
     createEntry(token, "WORKOUT", "45", "Strength training");
     createEntry(token, "STEPS", "8000", null);
@@ -72,7 +72,7 @@ class TrackerIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(entryJson("FOOD", "300", null)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.code").value("TRACKER_DETAIL_REQUIRED"));
+        .andExpect(jsonPath("$.code").value("FOOD_ENTRY_REQUIRES_ITEMS"));
 
     mockMvc.perform(post("/api/tracker-entries")
             .header("Authorization", bearer(token))
@@ -124,6 +124,18 @@ class TrackerIntegrationTest {
         .andExpect(status().isCreated())
         .andReturn().getResponse().getContentAsString();
     return objectMapper.readTree(response);
+  }
+
+  private void createFoodEntry(String token) throws Exception {
+    Map<String, Object> body = Map.of(
+        "recordedAt", Instant.now().minusSeconds(60).toString(),
+        "items", java.util.List.of(Map.of("foodId", 1, "grams", 100)),
+        "notes", "integration test");
+    mockMvc.perform(post("/api/food/entries")
+            .header("Authorization", bearer(token))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(body)))
+        .andExpect(status().isCreated());
   }
 
   private String entryJson(String type, String amount, String detail) throws Exception {

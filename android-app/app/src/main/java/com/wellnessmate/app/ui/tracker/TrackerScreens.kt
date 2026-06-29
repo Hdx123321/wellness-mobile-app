@@ -3,10 +3,12 @@ package com.wellnessmate.app.ui.tracker
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -16,12 +18,14 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -34,6 +38,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -49,52 +55,181 @@ import com.wellnessmate.app.data.TrackerEntryRequest
 import com.wellnessmate.app.data.TrackerEntryResponse
 import com.wellnessmate.app.data.TrackerTypeResponse
 import com.wellnessmate.app.ui.TrackerViewModel
+import com.wellnessmate.app.ui.FoodViewModel
+import com.wellnessmate.app.ui.CoachChatViewModel
+import com.wellnessmate.app.ui.HealthProfileViewModel
+import com.wellnessmate.app.ui.AiAdvisorViewModel
+import com.wellnessmate.app.ui.advisor.AiAdvisorScreen
+import com.wellnessmate.app.ui.chat.CoachChatScreen
+import com.wellnessmate.app.ui.food.FoodCameraScreen
+import com.wellnessmate.app.ui.food.FoodTrackerScreen
+import com.wellnessmate.app.ui.health.HealthProfileScreen
+import com.wellnessmate.app.ui.health.HealthSummaryCard
+import com.wellnessmate.app.ui.health.HeightPickerScreen
+import com.wellnessmate.app.ui.user.ReminderScreen
+import com.wellnessmate.app.ui.user.UserManagementScreen
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-private const val DASHBOARD = "dashboard"
-private const val HISTORY = "history"
+private const val HOME = "home"
+private const val COACH = "coach"
+private const val ADVISOR = "advisor"
+private const val USER_MANAGEMENT = "user-management"
+private const val REMINDER = "reminder"
+private const val HEALTH_PROFILE = "health-profile"
+private const val HEIGHT_PICKER = "height-picker"
+private const val TRACKER = "tracker/{type}"
 private const val FORM = "form/{type}/{id}"
-private val builtInTypes = listOf("FOOD", "WEIGHT", "WORKOUT", "STEPS", "SLEEP", "WATER")
+private const val FOOD = "food"
+private const val FOOD_CAMERA = "food-camera"
 
-/** Main post-onboarding navigation for dashboard, history, and shared tracker form. @author TODO(team member) */
+/** Main post-onboarding navigation for trackers and coach chat. @author TODO(team member) */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun MainTrackerNav(user: SessionUser, viewModel: TrackerViewModel, onLogout: () -> Unit) {
+fun MainTrackerNav(
+    user: SessionUser,
+    viewModel: TrackerViewModel,
+    foodViewModel: FoodViewModel,
+    coachChatViewModel: CoachChatViewModel,
+    healthProfileViewModel: HealthProfileViewModel,
+    aiAdvisorViewModel: AiAdvisorViewModel,
+    onLogout: () -> Unit,
+) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
+    var selectedDateText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    val selectedDate = LocalDate.parse(selectedDateText)
+
+    LaunchedEffect(selectedDateText) {
+        viewModel.loadDate(selectedDate)
+        foodViewModel.loadDate(selectedDate)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (route == HISTORY) stringResource(R.string.history) else stringResource(R.string.app_name)) },
-                actions = { TextButton(onClick = onLogout) { Text(stringResource(R.string.logout)) } },
+                title = {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(44.dp).clickable { navController.navigate(USER_MANAGEMENT) },
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text((user.displayName ?: user.username).take(1).uppercase())
+                        }
+                    }
+                },
+                actions = {
+                    TextButton(onClick = { showDatePicker = true }) {
+                        Text("📅 ${selectedDate.monthValue}/${selectedDate.dayOfMonth}")
+                    }
+                },
             )
         },
         bottomBar = {
-            if (route == DASHBOARD || route == HISTORY) {
+            if (user.role != "COACH" && (route == HOME || route == ADVISOR || route == COACH)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    TextButton(onClick = { navController.navigate(DASHBOARD) { launchSingleTop = true } }) {
-                        Text(stringResource(R.string.dashboard))
+                    TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) {
+                        Text("Home")
                     }
-                    TextButton(onClick = { navController.navigate(HISTORY) { launchSingleTop = true } }) {
-                        Text(stringResource(R.string.history))
+                    TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) {
+                        Text("AI Advisor")
+                    }
+                    TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) {
+                        Text("Coach")
                     }
                 }
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = DASHBOARD, modifier = Modifier.padding(padding)) {
-            composable(DASHBOARD) {
-                DashboardScreen(user, viewModel) { type -> navController.navigate("form/$type/-1") }
-            }
-            composable(HISTORY) {
-                HistoryScreen(
+        NavHost(
+            navController,
+            startDestination = if (user.role == "COACH") COACH else HOME,
+            modifier = Modifier.padding(padding),
+        ) {
+            composable(HOME) {
+                LaunchedEffect(Unit) {
+                    healthProfileViewModel.refresh()
+                }
+                HomeScreen(
+                    user = user,
                     viewModel = viewModel,
+                    healthProfileViewModel = healthProfileViewModel,
+                    onHealth = { navController.navigate(HEALTH_PROFILE) },
+                    onTracker = { type ->
+                        navController.navigate(if (type == "FOOD") FOOD else "tracker/$type")
+                    },
+                    selectedDate = selectedDate,
+                )
+            }
+            composable(ADVISOR) { AiAdvisorScreen(aiAdvisorViewModel) }
+            composable(COACH) {
+                CoachChatScreen(user, coachChatViewModel)
+            }
+            composable(USER_MANAGEMENT) {
+                UserManagementScreen(
+                    user = user,
+                    onProfile = { navController.navigate(HEALTH_PROFILE) },
+                    onReminder = { navController.navigate(REMINDER) },
+                    onLogout = onLogout,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(REMINDER) {
+                ReminderScreen(onBack = { navController.popBackStack() })
+            }
+            composable(HEALTH_PROFILE) {
+                LaunchedEffect(Unit) { healthProfileViewModel.refresh() }
+                HealthProfileScreen(
+                    viewModel = healthProfileViewModel,
+                    onHeight = { navController.navigate(HEIGHT_PICKER) },
+                    onWeight = { navController.navigate("tracker/WEIGHT") },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(HEIGHT_PICKER) {
+                HeightPickerScreen(
+                    viewModel = healthProfileViewModel,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = TRACKER,
+                arguments = listOf(navArgument("type") { type = NavType.StringType }),
+            ) { entry ->
+                val trackerType = entry.arguments?.getString("type") ?: "WATER"
+                TrackerDetailScreen(
+                    type = trackerType,
+                    viewModel = viewModel,
+                    selectedDate = selectedDate,
                     onEdit = { navController.navigate("form/${it.type}/${it.id}") },
                     onAdd = { navController.navigate("form/$it/-1") },
+                    onBack = {
+                        if (trackerType == "WEIGHT") healthProfileViewModel.refresh()
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable(FOOD) {
+                FoodTrackerScreen(
+                    viewModel = foodViewModel,
+                    selectedDate = selectedDate,
+                    healthProfileViewModel = healthProfileViewModel,
+                    onTakePhoto = { navController.navigate(FOOD_CAMERA) },
+                    onBack = { navController.popBackStack() },
+                    onTrackerChanged = viewModel::refresh,
+                )
+            }
+            composable(FOOD_CAMERA) {
+                FoodCameraScreen(
+                    viewModel = foodViewModel,
+                    onComplete = { navController.popBackStack() },
+                    onCancel = { navController.popBackStack() },
                 )
             }
             composable(
@@ -113,10 +248,36 @@ fun MainTrackerNav(user: SessionUser, viewModel: TrackerViewModel, onLogout: () 
             }
         }
     }
+
+    if (showDatePicker) {
+        val pickerState = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let {
+                        val picked = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+                        selectedDateText = picked.coerceAtMost(LocalDate.now()).toString()
+                    }
+                    showDatePicker = false
+                }) { Text("Select") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
+        ) { DatePicker(state = pickerState) }
+    }
 }
 
 @Composable
-private fun DashboardScreen(user: SessionUser, viewModel: TrackerViewModel, onAdd: (String) -> Unit) {
+private fun HomeScreen(
+    user: SessionUser,
+    viewModel: TrackerViewModel,
+    healthProfileViewModel: HealthProfileViewModel,
+    onHealth: () -> Unit,
+    onTracker: (String) -> Unit,
+    selectedDate: LocalDate,
+) {
     val state by viewModel.state.collectAsState()
     if (state.loading) return LoadingState()
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -125,13 +286,17 @@ private fun DashboardScreen(user: SessionUser, viewModel: TrackerViewModel, onAd
                 stringResource(R.string.hello_user, user.displayName ?: user.username),
                 style = MaterialTheme.typography.headlineMedium,
             )
-            Text(stringResource(R.string.dashboard_intro), modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+            Text("Overview for $selectedDate", modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+            HealthSummaryCard(healthProfileViewModel, onHealth)
+            Text("Trackers", style = MaterialTheme.typography.titleLarge)
             ErrorBanner(state.error, viewModel::clearError)
         }
         items(state.types) { type ->
-            val latest = state.entries.firstOrNull { it.type == type.type }
+            val dayEntries = state.entries.filter { it.type == type.type && entryDate(it) == selectedDate }
+            val value = if (type.type == "WEIGHT") dayEntries.maxByOrNull { it.recordedAt }?.amount
+                else dayEntries.sumOf { it.amount }.takeIf { dayEntries.isNotEmpty() }
             Card(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onAdd(type.type) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onTracker(type.type) },
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -140,9 +305,9 @@ private fun DashboardScreen(user: SessionUser, viewModel: TrackerViewModel, onAd
                 ) {
                     Column {
                         Text(typeLabel(type.type), style = MaterialTheme.typography.titleMedium)
-                        Text(latest?.let { "${formatAmount(it.amount)} ${it.unit}" } ?: stringResource(R.string.no_entries))
+                        Text(value?.let { "${formatAmount(it)} ${type.unit}" } ?: "No data")
                     }
-                    Text(stringResource(R.string.add))
+                    Text("View")
                 }
             }
         }
@@ -155,43 +320,59 @@ private fun DashboardScreen(user: SessionUser, viewModel: TrackerViewModel, onAd
 }
 
 @Composable
-private fun HistoryScreen(
+private fun TrackerDetailScreen(
+    type: String,
     viewModel: TrackerViewModel,
+    selectedDate: LocalDate,
     onEdit: (TrackerEntryResponse) -> Unit,
     onAdd: (String) -> Unit,
+    onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
-    var filter by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val visible = state.entries.filter { filter == null || it.type == filter }
+    val entries = state.entries.filter { it.type == type }
+    val selectedEntries = entries.filter { entryDate(it) == selectedDate }
+    val definition = state.types.firstOrNull { it.type == type }
+    val chart = (6 downTo 0).map { offset ->
+        val date = selectedDate.minusDays(offset.toLong())
+        val dayEntries = entries.filter { entryDate(it) == date }
+        val value = if (type == "WEIGHT") dayEntries.maxByOrNull { it.recordedAt }?.amount ?: 0.0
+            else dayEntries.sumOf { it.amount }
+        date to value
+    }
 
-    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text(stringResource(R.string.all)) })
-                    builtInTypes.take(3).forEach { type ->
-                        FilterChip(selected = filter == type, onClick = { filter = type }, label = { Text(typeLabel(type)) })
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    builtInTypes.drop(3).forEach { type ->
-                        FilterChip(selected = filter == type, onClick = { filter = type }, label = { Text(typeLabel(type)) })
-                    }
-                }
-                ErrorBanner(state.error, viewModel::clearError)
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(typeLabel(type), style = MaterialTheme.typography.headlineMedium)
+                TextButton(onClick = onBack) { Text("Back") }
             }
-            if (state.loading) item { LoadingState() }
-            else if (visible.isEmpty()) item { Text(stringResource(R.string.no_history), modifier = Modifier.padding(24.dp)) }
-            else items(visible, key = { it.id }) { item ->
-                TrackerHistoryRow(item, onEdit = { onEdit(item) }, onDelete = { deleteId = item.id })
-                HorizontalDivider()
+            ErrorBanner(state.error, viewModel::clearError)
+            SevenDayBarChart(chart, definition?.unit.orEmpty())
+            Text(selectedDate.toString(), style = MaterialTheme.typography.titleLarge)
+        }
+        if (state.loading) item { LoadingState() }
+        else if (selectedEntries.isEmpty()) item { Text("No data for this day.", modifier = Modifier.padding(vertical = 16.dp)) }
+        else items(selectedEntries, key = { it.id }) { item ->
+            TrackerDayRow(
+                item,
+                editable = selectedDate == LocalDate.now(),
+                onEdit = { onEdit(item) },
+                onDelete = { deleteId = item.id },
+            )
+            HorizontalDivider()
+        }
+        if (selectedDate == LocalDate.now()) {
+            item {
+                Button(onClick = { onAdd(type) }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
+                    Text(if (selectedEntries.isEmpty()) "Add today's data" else "Add another entry")
+                }
             }
         }
-        Button(
-            onClick = { onAdd(filter ?: "WATER") },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.add_entry)) }
     }
 
     deleteId?.let { id ->
@@ -208,7 +389,7 @@ private fun HistoryScreen(
 }
 
 @Composable
-private fun TrackerHistoryRow(item: TrackerEntryResponse, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun TrackerDayRow(item: TrackerEntryResponse, editable: Boolean, onEdit: () -> Unit, onDelete: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -219,8 +400,10 @@ private fun TrackerHistoryRow(item: TrackerEntryResponse, onEdit: () -> Unit, on
             Text("${formatAmount(item.amount)} ${item.unit}${item.detail?.let { " • $it" } ?: ""}")
             Text(formatTime(item.recordedAt), style = MaterialTheme.typography.bodySmall)
         }
-        TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) }
-        TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
+        if (editable) {
+            TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) }
+            TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
+        }
     }
 }
 
@@ -342,3 +525,7 @@ private fun formatTime(value: String): String = runCatching {
         .withZone(ZoneId.systemDefault())
         .format(Instant.parse(value))
 }.getOrDefault(value)
+
+private fun entryDate(item: TrackerEntryResponse): LocalDate = runCatching {
+    Instant.parse(item.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate()
+}.getOrDefault(LocalDate.MIN)

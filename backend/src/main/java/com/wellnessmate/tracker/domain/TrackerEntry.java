@@ -58,8 +58,13 @@ public class TrackerEntry {
 
   public TrackerEntry(Long userId, TrackerType trackerType, Instant recordedAt,
                       BigDecimal amount, String detail, String notes) {
+    this(userId, trackerType, recordedAt, amount, detail, notes, TrackerSource.MANUAL);
+  }
+
+  public TrackerEntry(Long userId, TrackerType trackerType, Instant recordedAt,
+                      BigDecimal amount, String detail, String notes, TrackerSource source) {
     this.userId = userId;
-    this.source = TrackerSource.MANUAL;
+    this.source = source;
     this.createdAt = Instant.now();
     update(trackerType, recordedAt, amount, detail, notes);
   }

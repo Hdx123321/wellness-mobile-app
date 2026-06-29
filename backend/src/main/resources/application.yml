@@ -15,6 +15,10 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: ${PORT:8080}
@@ -34,6 +38,6 @@ security:
     ttl: ${JWT_TTL:PT2H}
 
 ai:
-  base-url: ${LLM_API_BASE_URL:}
+  base-url: ${LLM_API_BASE_URL:https://api.openai.com/v1}
   api-key: ${LLM_API_KEY:}
-  model: ${LLM_MODEL:}
+  model: ${LLM_MODEL:gpt-5.5}

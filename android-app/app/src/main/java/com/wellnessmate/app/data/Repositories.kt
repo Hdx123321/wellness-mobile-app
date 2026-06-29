@@ -1,6 +1,9 @@
 package com.wellnessmate.app.data
 
 import retrofit2.HttpException
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /** User-facing API failure with a stable fallback message. @author TODO(team member) */
 class ApiFailure(message: String) : RuntimeException(message)
@@ -59,9 +62,25 @@ class NetworkOnboardingRepository(private val api: WellnessApi) : OnboardingRepo
     override suspend fun save(request: OnboardingRequest) = apiResult { api.saveProfile(request); Unit }
 }
 
+interface HealthProfileRepository {
+    suspend fun profile(): Result<ProfileResponse>
+    suspend fun updateHeight(profile: ProfileResponse, heightCm: Double): Result<ProfileResponse>
+}
+
+class NetworkHealthProfileRepository(private val api: WellnessApi) : HealthProfileRepository {
+    override suspend fun profile() = apiResult { api.profile() }
+    override suspend fun updateHeight(profile: ProfileResponse, heightCm: Double) = apiResult {
+        api.saveProfile(profile.toUpdate(heightCm))
+    }
+}
+
 interface TrackerRepository {
     suspend fun types(): Result<List<TrackerTypeResponse>>
-    suspend fun entries(type: String? = null): Result<List<TrackerEntryResponse>>
+    suspend fun entries(
+        type: String? = null,
+        from: String? = null,
+        to: String? = null,
+    ): Result<List<TrackerEntryResponse>>
     suspend fun create(request: TrackerEntryRequest): Result<TrackerEntryResponse>
     suspend fun update(id: Long, request: TrackerEntryRequest): Result<TrackerEntryResponse>
     suspend fun delete(id: Long): Result<Unit>
@@ -69,12 +88,65 @@ interface TrackerRepository {
 
 class NetworkTrackerRepository(private val api: WellnessApi) : TrackerRepository {
     override suspend fun types() = apiResult { api.trackerTypes() }
-    override suspend fun entries(type: String?) = apiResult { api.trackerEntries(type).content }
+    override suspend fun entries(type: String?, from: String?, to: String?) = apiResult {
+        api.trackerEntries(type, from, to).content
+    }
     override suspend fun create(request: TrackerEntryRequest) = apiResult { api.createTrackerEntry(request) }
     override suspend fun update(id: Long, request: TrackerEntryRequest) = apiResult {
         api.updateTrackerEntry(id, request)
     }
     override suspend fun delete(id: Long) = apiResult { api.deleteTrackerEntry(id); Unit }
+}
+
+interface FoodRepository {
+    suspend fun catalog(query: String): Result<List<FoodCatalogItemResponse>>
+    suspend fun entries(from: String, to: String): Result<List<FoodEntryResponse>>
+    suspend fun create(request: FoodEntryRequest): Result<FoodEntryResponse>
+    suspend fun createAnalyzed(request: AnalyzedFoodEntryRequest): Result<FoodEntryResponse>
+    suspend fun analyze(image: ByteArray): Result<FoodAnalysisResponse>
+    suspend fun delete(id: Long): Result<Unit>
+}
+
+class NetworkFoodRepository(private val api: WellnessApi) : FoodRepository {
+    override suspend fun catalog(query: String) = apiResult { api.foodCatalog(query.trim()) }
+    override suspend fun entries(from: String, to: String) = apiResult { api.foodEntries(from, to) }
+    override suspend fun create(request: FoodEntryRequest) = apiResult { api.createFoodEntry(request) }
+    override suspend fun createAnalyzed(request: AnalyzedFoodEntryRequest) = apiResult {
+        api.createAnalyzedFoodEntry(request)
+    }
+    override suspend fun analyze(image: ByteArray) = apiResult {
+        val body = image.toRequestBody("image/jpeg".toMediaType())
+        api.analyzeFoodPhoto(MultipartBody.Part.createFormData("image", "meal.jpg", body))
+    }
+    override suspend fun delete(id: Long) = apiResult { api.deleteFoodEntry(id); Unit }
+}
+
+interface CoachChatRepository {
+    suspend fun conversations(): Result<List<CoachConversationResponse>>
+    suspend fun messages(conversationId: Long, afterId: Long): Result<List<CoachMessageResponse>>
+    suspend fun send(conversationId: Long, content: String): Result<CoachMessageResponse>
+}
+
+class NetworkCoachChatRepository(private val api: WellnessApi) : CoachChatRepository {
+    override suspend fun conversations() = apiResult { api.coachConversations() }
+    override suspend fun messages(conversationId: Long, afterId: Long) = apiResult {
+        api.coachMessages(conversationId, afterId)
+    }
+    override suspend fun send(conversationId: Long, content: String) = apiResult {
+        api.sendCoachMessage(conversationId, CoachMessageRequest(content.trim()))
+    }
+}
+
+interface AiAdvisorRepository {
+    suspend fun messages(): Result<List<AiAdvisorMessageResponse>>
+    suspend fun send(content: String): Result<AiAdvisorMessageResponse>
+}
+
+class NetworkAiAdvisorRepository(private val api: WellnessApi) : AiAdvisorRepository {
+    override suspend fun messages() = apiResult { api.aiAdvisorMessages() }
+    override suspend fun send(content: String) = apiResult {
+        api.sendAiAdvisorMessage(AiAdvisorMessageRequest(content.trim()))
+    }
 }
 
 private suspend fun <T> apiResult(block: suspend () -> T): Result<T> {
@@ -86,6 +158,9 @@ private suspend fun <T> apiResult(block: suspend () -> T): Result<T> {
                 400 -> "Please check the entered values."
                 401 -> "Your session has expired. Please sign in again."
                 409 -> "This account information is already in use."
+                422 -> "No food could be recognized. Try a clearer photo."
+                502 -> "Food photo analysis is temporarily unavailable."
+                503 -> "AI service is not configured on the server."
                 else -> "Server request failed (${error.code()})."
             }
             else -> "Cannot reach the WellnessMate service."

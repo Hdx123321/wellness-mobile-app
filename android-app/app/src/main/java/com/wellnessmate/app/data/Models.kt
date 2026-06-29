@@ -51,7 +51,35 @@ data class OnboardingRequest(
     val coreNeeds: Set<String>,
 )
 
-data class ProfileResponse(val userId: Long)
+data class ProfileResponse(
+    val userId: Long,
+    val dateOfBirth: String,
+    val heightCm: Double,
+    val currentWeightKg: Double,
+    val sex: String,
+    val ethnicity: String?,
+    val targetWeightKg: Double?,
+    val goalStartedAt: String?,
+    val goalDurationWeeks: Int?,
+    val dailyRoutine: String,
+    val activityLevel: String,
+    val exercisePreferences: Set<String>,
+    val coreNeeds: Set<String>,
+) {
+    fun toUpdate(heightCm: Double = this.heightCm) = OnboardingRequest(
+        dateOfBirth = dateOfBirth,
+        heightCm = heightCm,
+        currentWeightKg = currentWeightKg,
+        sex = sex,
+        ethnicity = ethnicity,
+        targetWeightKg = targetWeightKg,
+        goalDurationWeeks = goalDurationWeeks,
+        dailyRoutine = dailyRoutine,
+        activityLevel = activityLevel,
+        exercisePreferences = exercisePreferences,
+        coreNeeds = coreNeeds,
+    )
+}
 
 data class TrackerTypeResponse(
     val type: String,
@@ -90,4 +118,109 @@ data class PageResponse<T>(
     val size: Int,
     val totalElements: Long,
     val totalPages: Int,
+)
+
+data class FoodCatalogItemResponse(
+    val id: Long,
+    val name: String,
+    val caloriesPer100g: Double,
+    val proteinPer100g: Double,
+    val carbohydratePer100g: Double,
+    val fatPer100g: Double,
+    val fiberPer100g: Double,
+)
+
+data class FoodNutrients(
+    val calories: Double,
+    val proteinGrams: Double,
+    val carbohydrateGrams: Double,
+    val fatGrams: Double,
+    val fiberGrams: Double,
+)
+
+data class CatalogFoodItemRequest(val foodId: Long, val grams: Double)
+
+data class FoodEntryRequest(
+    val recordedAt: String,
+    val items: List<CatalogFoodItemRequest>,
+    val notes: String?,
+)
+
+data class AnalyzedFoodItemRequest(
+    val name: String,
+    val grams: Double,
+    val calories: Double,
+    val proteinGrams: Double,
+    val carbohydrateGrams: Double,
+    val fatGrams: Double,
+    val fiberGrams: Double,
+)
+
+data class AnalyzedFoodEntryRequest(
+    val recordedAt: String,
+    val items: List<AnalyzedFoodItemRequest>,
+    val notes: String?,
+)
+
+data class FoodEntryItemResponse(
+    val id: Long,
+    val catalogItemId: Long?,
+    val name: String,
+    val grams: Double,
+    val nutrients: FoodNutrients,
+)
+
+data class FoodEntryResponse(
+    val id: Long,
+    val trackerEntryId: Long,
+    val recordedAt: String,
+    val source: String,
+    val notes: String?,
+    val items: List<FoodEntryItemResponse>,
+    val totals: FoodNutrients,
+)
+
+data class FoodAnalysisItemResponse(
+    val name: String,
+    val estimatedGrams: Double,
+    val calories: Double,
+    val proteinGrams: Double,
+    val carbohydrateGrams: Double,
+    val fatGrams: Double,
+    val fiberGrams: Double,
+    val confidence: Double,
+)
+
+data class FoodAnalysisResponse(
+    val summary: String,
+    val items: List<FoodAnalysisItemResponse>,
+    val disclaimer: String,
+)
+
+data class CoachConversationResponse(
+    val id: Long,
+    val clientName: String,
+    val coachName: String,
+    val lastMessage: String?,
+    val updatedAt: String,
+)
+
+data class CoachMessageRequest(val content: String)
+
+data class CoachMessageResponse(
+    val id: Long,
+    val senderId: Long,
+    val senderName: String,
+    val senderRole: String,
+    val content: String,
+    val createdAt: String,
+)
+
+data class AiAdvisorMessageRequest(val content: String)
+
+data class AiAdvisorMessageResponse(
+    val id: Long,
+    val role: String,
+    val content: String,
+    val createdAt: String,
 )

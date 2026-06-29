@@ -72,7 +72,7 @@ All endpoints require a bearer token and derive ownership from its subject.
 
 | Type | `amount` meaning | Unit | Required detail |
 |---|---|---|---|
-| `FOOD` | Calories | `kcal` | Food or meal |
+| `FOOD` | Calories | `kcal` | Created through the dedicated food endpoints below |
 | `WEIGHT` | Body weight | `kg` | No |
 | `WORKOUT` | Duration | `min` | Workout type |
 | `STEPS` | Step count | `steps` | No; whole number only |
@@ -111,6 +111,27 @@ GET    /api/recommendations?page=0&size=20
 GET    /api/recommendations/latest
 ```
 
+## Coach chat
+
+Coach accounts are administratively provisioned. A client is assigned to the first available coach when the client first opens chat. Both participants are authorized from the JWT; conversation IDs never grant access by themselves.
+
+```text
+GET  /api/coach-chat/conversations
+GET  /api/coach-chat/conversations/{id}/messages?afterId=0
+POST /api/coach-chat/conversations/{id}/messages
+```
+
+The Android client requests only messages newer than its last received ID every three seconds. Messages are persisted before they are returned.
+
+## AI wellness advisor
+
+```text
+GET  /api/ai-advisor/messages
+POST /api/ai-advisor/messages
+```
+
+Messages are JWT-owned and persisted. On send, the backend supplies the model with the private profile, up to seven days of recent tracker context, and recent conversation messages. The OpenAI credential remains backend-only; `store` is disabled on Responses API requests. Advice is constrained to non-diagnostic wellness guidance.
+
 ## Error envelope
 
 ```json
@@ -127,3 +148,33 @@ GET    /api/recommendations/latest
 ```
 
 List responses will consistently contain `content`, `page`, `size`, `totalElements`, and `totalPages`.
+
+## Food tracker
+
+The generic tracker-entry write endpoint rejects `FOOD`; food records must contain item-level nutrient snapshots and are created here instead. All endpoints require a bearer token.
+
+```text
+GET    /api/food/catalog?query=&limit=50
+POST   /api/food/entries
+POST   /api/food/entries/analyzed
+GET    /api/food/entries?from=&to=
+DELETE /api/food/entries/{id}
+POST   /api/food/analyze
+```
+
+Catalog entry request (nutrients are calculated by the backend from the selected catalog row and serving weight):
+
+```json
+{
+  "recordedAt": "2026-06-28T06:00:00Z",
+  "mealName": "Breakfast",
+  "items": [
+    {
+      "catalogItemId": 1,
+      "grams": 150
+    }
+  ]
+}
+```
+
+`POST /api/food/analyze` accepts multipart field `image` (JPEG, PNG, or WebP; maximum 10 MB). It returns estimated foods, serving weights, calories, protein, carbohydrates, fat, fiber, confidence, and a disclaimer. Analysis is not persisted until the client reviews the result and submits it to `/api/food/entries/analyzed`.
