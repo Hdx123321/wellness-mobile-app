@@ -67,6 +67,13 @@ public class UserAccount {
     updatedAt = Instant.now();
   }
 
+  /** Administrative provisioning hook; public registration still creates clients only. */
+  public void promoteToCoach() {
+    role = UserRole.COACH;
+    onboardingCompleted = true;
+    updatedAt = Instant.now();
+  }
+
   public Long getId() { return id; }
   public String getUsername() { return username; }
   public String getEmail() { return email; }

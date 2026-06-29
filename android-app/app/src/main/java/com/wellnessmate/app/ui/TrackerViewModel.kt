@@ -7,6 +7,9 @@ import com.wellnessmate.app.data.TrackerEntryRequest
 import com.wellnessmate.app.data.TrackerEntryResponse
 import com.wellnessmate.app.data.TrackerRepository
 import com.wellnessmate.app.data.TrackerTypeResponse
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +23,7 @@ data class TrackerUiState(
     val error: String? = null,
 )
 
-/** Owns tracker catalog, history, create/edit, and delete state. @author TODO(team member) */
+/** Owns tracker catalog, calendar data, create/edit, and delete state. @author TODO(team member) */
 class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() {
     private val _state = MutableStateFlow(TrackerUiState())
     val state: StateFlow<TrackerUiState> = _state.asStateFlow()
@@ -33,7 +36,10 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
             val types = repository.types()
-            val entries = repository.entries()
+            val zone = ZoneId.systemDefault()
+            val from = LocalDate.now(zone).minusDays(6).atStartOfDay(zone).toInstant().toString()
+            val to = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toString()
+            val entries = repository.entries(from = from, to = to)
             if (types.isSuccess && entries.isSuccess) {
                 _state.value = TrackerUiState(
                     loading = false,
@@ -46,6 +52,32 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
                     error = types.exceptionOrNull()?.message ?: entries.exceptionOrNull()?.message,
                 )
             }
+        }
+    }
+
+    fun loadMonth(type: String, month: YearMonth) {
+        val zone = ZoneId.systemDefault()
+        val from = month.atDay(1).minusDays(6).atStartOfDay(zone).toInstant().toString()
+        val to = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toString()
+        _state.value = _state.value.copy(loading = true, error = null)
+        viewModelScope.launch {
+            repository.entries(type, from, to).fold(
+                onSuccess = { _state.value = _state.value.copy(loading = false, entries = it) },
+                onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
+            )
+        }
+    }
+
+    fun loadDate(date: LocalDate) {
+        val zone = ZoneId.systemDefault()
+        val from = date.minusDays(6).atStartOfDay(zone).toInstant().toString()
+        val to = date.plusDays(1).atStartOfDay(zone).toInstant().toString()
+        _state.value = _state.value.copy(loading = true, error = null)
+        viewModelScope.launch {
+            repository.entries(from = from, to = to).fold(
+                onSuccess = { _state.value = _state.value.copy(loading = false, entries = it) },
+                onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
+            )
         }
     }
 

@@ -39,7 +39,7 @@ private class FakeTrackerRepository : TrackerRepository {
     override suspend fun types() = Result.success(
         listOf(TrackerTypeResponse("WATER", "ml", "Volume", null, false, 0.0, 20000.0, false)),
     )
-    override suspend fun entries(type: String?) = Result.success(stored.toList())
+    override suspend fun entries(type: String?, from: String?, to: String?) = Result.success(stored.toList())
     override suspend fun create(request: TrackerEntryRequest): Result<TrackerEntryResponse> {
         val entry = TrackerEntryResponse(1, request.type, request.recordedAt, request.amount, "ml", null, null, "MANUAL", 0)
         stored += entry

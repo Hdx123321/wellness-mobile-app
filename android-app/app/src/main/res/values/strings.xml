@@ -30,16 +30,10 @@
     <string name="exercise_preferences">Preferred exercise types</string>
     <string name="core_needs">What should WellnessMate help with?</string>
     <string name="complete_setup">Complete setup</string>
-    <string name="dashboard">Dashboard</string>
-    <string name="history">History</string>
     <string name="hello_user">Hello, %1$s</string>
-    <string name="dashboard_intro">Tap a tracker to add today’s value.</string>
     <string name="no_entries">No entries yet</string>
     <string name="add">Add</string>
     <string name="refresh">Refresh</string>
-    <string name="all">All</string>
-    <string name="no_history">No tracker history for this filter.</string>
-    <string name="add_entry">Add entry</string>
     <string name="delete_entry">Delete entry?</string>
     <string name="delete_confirmation">This tracker entry will be permanently deleted.</string>
     <string name="delete">Delete</string>

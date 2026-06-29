@@ -14,8 +14,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wellnessmate.app.data.AppContainer
 import com.wellnessmate.app.ui.AuthViewModel
 import com.wellnessmate.app.ui.OnboardingViewModel
+import com.wellnessmate.app.ui.FoodViewModel
 import com.wellnessmate.app.ui.SessionState
 import com.wellnessmate.app.ui.TrackerViewModel
+import com.wellnessmate.app.ui.CoachChatViewModel
+import com.wellnessmate.app.ui.HealthProfileViewModel
+import com.wellnessmate.app.ui.AiAdvisorViewModel
 import com.wellnessmate.app.ui.auth.LoginRegisterScreen
 import com.wellnessmate.app.ui.onboarding.OnboardingScreen
 import com.wellnessmate.app.ui.tracker.MainTrackerNav
@@ -46,7 +50,7 @@ private fun WellnessMateApp(container: AppContainer) {
     when (val current = session) {
         SessionState.SignedOut -> LoginRegisterScreen(authViewModel)
         is SessionState.SignedIn -> {
-            if (current.user.onboardingRequired) {
+            if (current.user.onboardingRequired && current.user.role != "COACH") {
                 val onboardingViewModel: OnboardingViewModel = viewModel(
                     factory = OnboardingViewModel.factory(container.onboardingRepository),
                 )
@@ -59,9 +63,28 @@ private fun WellnessMateApp(container: AppContainer) {
                 val trackerViewModel: TrackerViewModel = viewModel(
                     factory = TrackerViewModel.factory(container.trackerRepository),
                 )
+                val foodViewModel: FoodViewModel = viewModel(
+                    factory = FoodViewModel.factory(container.foodRepository),
+                )
+                val coachChatViewModel: CoachChatViewModel = viewModel(
+                    factory = CoachChatViewModel.factory(container.coachChatRepository),
+                )
+                val healthProfileViewModel: HealthProfileViewModel = viewModel(
+                    factory = HealthProfileViewModel.factory(
+                        container.healthProfileRepository,
+                        container.trackerRepository,
+                    ),
+                )
+                val aiAdvisorViewModel: AiAdvisorViewModel = viewModel(
+                    factory = AiAdvisorViewModel.factory(container.aiAdvisorRepository),
+                )
                 MainTrackerNav(
                     user = current.user,
                     viewModel = trackerViewModel,
+                    foodViewModel = foodViewModel,
+                    coachChatViewModel = coachChatViewModel,
+                    healthProfileViewModel = healthProfileViewModel,
+                    aiAdvisorViewModel = aiAdvisorViewModel,
                     onLogout = authViewModel::logout,
                 )
             }

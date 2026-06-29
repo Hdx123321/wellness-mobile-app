@@ -74,6 +74,10 @@ public class TrackerService {
 
   private void validate(TrackerEntryRequest request) {
     TrackerType type = request.type();
+    if (type == TrackerType.FOOD) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "FOOD_ENTRY_REQUIRES_ITEMS",
+          "Food entries must be created from catalog items or a confirmed photo analysis");
+    }
     BigDecimal amount = request.amount();
     if (amount.compareTo(type.minimum()) < 0 || amount.compareTo(type.maximum()) > 0) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "TRACKER_AMOUNT_OUT_OF_RANGE",

@@ -33,5 +33,9 @@ class AppContainer(context: Context) {
 
     val authRepository: AuthRepository = NetworkAuthRepository(api, tokenStore)
     val onboardingRepository: OnboardingRepository = NetworkOnboardingRepository(api)
+    val healthProfileRepository: HealthProfileRepository = NetworkHealthProfileRepository(api)
     val trackerRepository: TrackerRepository = NetworkTrackerRepository(api)
+    val foodRepository: FoodRepository = NetworkFoodRepository(api)
+    val coachChatRepository: CoachChatRepository = NetworkCoachChatRepository(api)
+    val aiAdvisorRepository: AiAdvisorRepository = NetworkAiAdvisorRepository(api)
 }
