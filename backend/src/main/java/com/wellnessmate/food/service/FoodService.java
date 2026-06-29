@@ -12,6 +12,7 @@ import com.wellnessmate.food.domain.FoodCatalogItem;
 import com.wellnessmate.food.domain.FoodEntry;
 import com.wellnessmate.food.domain.FoodEntryItem;
 import com.wellnessmate.food.domain.FoodEntrySource;
+import com.wellnessmate.food.domain.MealType;
 import com.wellnessmate.food.repository.FoodCatalogRepository;
 import com.wellnessmate.food.repository.FoodEntryItemRepository;
 import com.wellnessmate.food.repository.FoodEntryRepository;
@@ -76,14 +77,16 @@ public class FoodService {
               food.getCarbohydratePer100g().multiply(factor),
               food.getFatPer100g().multiply(factor), food.getFiberPer100g().multiply(factor)));
     }).toList();
-    return persist(userId, request.recordedAt(), FoodEntrySource.MANUAL, normalized(request.notes()), snapshots);
+    return persist(userId, request.recordedAt(), request.mealType(), FoodEntrySource.MANUAL,
+        normalized(request.notes()), snapshots);
   }
 
   @Transactional
   public FoodEntryResponse createFromAnalysis(Long userId, AnalyzedFoodEntryRequest request) {
     validateTime(request.recordedAt());
     List<ItemSnapshot> snapshots = request.items().stream().map(this::snapshot).toList();
-    return persist(userId, request.recordedAt(), FoodEntrySource.AI, normalized(request.notes()), snapshots);
+    return persist(userId, request.recordedAt(), request.mealType(), FoodEntrySource.AI,
+        normalized(request.notes()), snapshots);
   }
 
   @Transactional(readOnly = true)
@@ -109,7 +112,8 @@ public class FoodService {
     trackerEntries.deleteById(entry.getTrackerEntryId());
   }
 
-  private FoodEntryResponse persist(Long userId, Instant recordedAt, FoodEntrySource source,
+  private FoodEntryResponse persist(Long userId, Instant recordedAt,
+                                    MealType mealType, FoodEntrySource source,
                                     String notes, List<ItemSnapshot> snapshots) {
     FoodNutrients totals = totalSnapshots(snapshots);
     if (totals.calories().compareTo(MAX_MEAL_CALORIES) > 0) {
@@ -120,7 +124,8 @@ public class FoodService {
     TrackerSource trackerSource = source == FoodEntrySource.AI ? TrackerSource.AI : TrackerSource.MANUAL;
     TrackerEntry tracker = trackerEntries.save(new TrackerEntry(userId, TrackerType.FOOD, recordedAt,
         totals.calories(), detail, notes, trackerSource));
-    FoodEntry entry = foodEntries.save(new FoodEntry(userId, tracker.getId(), recordedAt, source, notes));
+    FoodEntry entry = foodEntries.save(new FoodEntry(
+        userId, tracker.getId(), recordedAt, source, mealType, notes));
     List<FoodEntryItem> saved = foodItems.saveAll(snapshots.stream().map(item -> new FoodEntryItem(
         entry.getId(), item.catalogItemId(), item.name(), item.grams(), item.nutrients().calories(),
         item.nutrients().proteinGrams(), item.nutrients().carbohydrateGrams(),

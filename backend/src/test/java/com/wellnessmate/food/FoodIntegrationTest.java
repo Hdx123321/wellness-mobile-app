@@ -41,6 +41,7 @@ class FoodIntegrationTest {
 
     Map<String, Object> request = Map.of(
         "recordedAt", Instant.now().minusSeconds(30).toString(),
+        "mealType", "LUNCH",
         "items", List.of(
             Map.of("foodId", 1, "grams", 200),
             Map.of("foodId", 8, "grams", 150)),
@@ -55,6 +56,7 @@ class FoodIntegrationTest {
         .andExpect(jsonPath("$.totals.carbohydrateGrams").value(42.3))
         .andExpect(jsonPath("$.totals.fatGrams").value(7.65))
         .andExpect(jsonPath("$.totals.fiberGrams").value(0.6))
+        .andExpect(jsonPath("$.mealType").value("LUNCH"))
         .andReturn().getResponse().getContentAsString();
     long foodEntryId = objectMapper.readTree(response).path("id").asLong();
 
@@ -77,6 +79,7 @@ class FoodIntegrationTest {
     String token = register("foodanalysis");
     Map<String, Object> request = Map.of(
         "recordedAt", Instant.now().minusSeconds(30).toString(),
+        "mealType", "DINNER",
         "items", List.of(Map.of(
             "name", "Estimated meal", "grams", 300, "calories", 450,
             "proteinGrams", 30, "carbohydrateGrams", 40,
@@ -88,6 +91,7 @@ class FoodIntegrationTest {
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.source").value("AI"))
+        .andExpect(jsonPath("$.mealType").value("DINNER"))
         .andExpect(jsonPath("$.totals.calories").value(450.0))
         .andReturn().getResponse().getContentAsString();
     JsonNode entry = objectMapper.readTree(response);

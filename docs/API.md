@@ -167,14 +167,18 @@ Catalog entry request (nutrients are calculated by the backend from the selected
 ```json
 {
   "recordedAt": "2026-06-28T06:00:00Z",
-  "mealName": "Breakfast",
+  "mealType": "BREAKFAST",
   "items": [
     {
-      "catalogItemId": 1,
+      "foodId": 1,
       "grams": 150
     }
   ]
 }
 ```
+
+`mealType` must be `BREAKFAST`, `LUNCH`, `DINNER`, or `SNACK`, and is returned on every food entry.
+
+For `WEIGHT`, creating another entry on the same UTC calendar date updates the existing entry instead of creating a duplicate. Other tracker types may contain multiple entries per day.
 
 `POST /api/food/analyze` accepts multipart field `image` (JPEG, PNG, or WebP; maximum 10 MB). It returns estimated foods, serving weights, calories, protein, carbohydrates, fat, fiber, confidence, and a disclaimer. Analysis is not persisted until the client reviews the result and submits it to `/api/food/entries/analyzed`.

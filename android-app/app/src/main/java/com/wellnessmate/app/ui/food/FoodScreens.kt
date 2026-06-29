@@ -23,12 +23,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -65,6 +69,7 @@ import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.concurrent.Executors
 import kotlin.math.cos
 import kotlin.math.sin
@@ -74,20 +79,14 @@ fun FoodTrackerScreen(
     viewModel: FoodViewModel,
     selectedDate: LocalDate,
     healthProfileViewModel: HealthProfileViewModel,
-    onTakePhoto: () -> Unit,
+    onTakePhoto: (LocalDate, String) -> Unit,
+    onAddFood: (LocalDate, String) -> Unit,
     onBack: () -> Unit,
     onTrackerChanged: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
-    var query by rememberSaveable { mutableStateOf("") }
-    var notes by rememberSaveable { mutableStateOf("") }
-    var localError by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteId by rememberSaveable { mutableStateOf<Long?>(null) }
     val selectedEntries = state.entries.filter { foodDate(it) == selectedDate }
-    val selectedGrams = remember { mutableStateMapOf<Long, String>() }
-    val selectedCatalog = remember { mutableStateMapOf<Long, FoodCatalogItemResponse>() }
-    val selectedFoods = selectedCatalog.values.toList()
-    val preview = previewNutrients(selectedFoods, selectedGrams)
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         item {
@@ -114,8 +113,31 @@ fun FoodTrackerScreen(
             FoodBudgetCard(totalEntries(selectedEntries), healthProfileViewModel)
         }
 
-        items(selectedEntries, key = { "entry-${it.id}" }) { entry ->
-            FoodEntryCard(entry, editable = selectedDate == LocalDate.now()) { deleteId = entry.id }
+        FoodMeal.entries.forEach { meal ->
+            val mealEntries = selectedEntries.filter { it.mealType == meal.name }
+            item(key = "meal-${meal.name}") {
+                Card(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(meal.label, style = MaterialTheme.typography.titleLarge)
+                            Text("${format(totalEntries(mealEntries).calories)} kcal")
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Button(onClick = { onAddFood(selectedDate, meal.name) }) { Text("Add food") }
+                            if (selectedDate == LocalDate.now()) {
+                                TextButton(onClick = { onTakePhoto(selectedDate, meal.name) }) { Text("Take photo") }
+                            }
+                        }
+                    }
+                }
+            }
+            items(mealEntries, key = { "entry-${it.id}" }) { entry ->
+                FoodEntryCard(entry, editable = true) { deleteId = entry.id }
+            }
         }
 
         item {
@@ -144,78 +166,6 @@ fun FoodTrackerScreen(
                     }
                 }
             }
-            if (selectedDate == LocalDate.now()) Button(
-                onClick = onTakePhoto,
-                enabled = !state.analyzing,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            ) {
-                if (state.analyzing) CircularProgressIndicator(strokeWidth = 2.dp)
-                else Text("Photograph meal for AI estimate")
-            }
-            if (selectedDate == LocalDate.now()) Text("Choose foods", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp))
-            if (selectedDate == LocalDate.now()) Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Search food") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(onClick = { viewModel.search(query) }, modifier = Modifier.padding(start = 8.dp)) {
-                    Text("Search")
-                }
-            }
-            if (selectedDate == LocalDate.now() && selectedFoods.isNotEmpty()) {
-                Text("Meal preview", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 12.dp))
-                NutrientSummary(preview)
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text("Meal notes (optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                localError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                Button(
-                    onClick = {
-                        val requests = selectedGrams.mapNotNull { (id, grams) ->
-                            grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }?.let {
-                                CatalogFoodItemRequest(id, it)
-                            }
-                        }
-                        if (requests.size != selectedGrams.size) {
-                            localError = "Enter grams from 1 to 5000 for every selected food."
-                        } else {
-                            localError = null
-                            viewModel.saveCatalog(requests, notes.ifBlank { null }) {
-                                selectedGrams.clear()
-                                selectedCatalog.clear()
-                                notes = ""
-                                onTrackerChanged()
-                            }
-                        }
-                    },
-                    enabled = !state.saving,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                ) { Text("Save meal") }
-            }
-        }
-
-        if (selectedDate == LocalDate.now()) {
-            items(state.catalog, key = { "catalog-${it.id}" }) { food ->
-                CatalogFoodCard(
-                    food = food,
-                    grams = selectedGrams[food.id],
-                    onAdd = {
-                        selectedCatalog[food.id] = food
-                        selectedGrams[food.id] = "100"
-                    },
-                    onGrams = { selectedGrams[food.id] = it },
-                    onRemove = {
-                        selectedGrams.remove(food.id)
-                        selectedCatalog.remove(food.id)
-                    },
-                )
-            }
         }
     }
 
@@ -235,8 +185,156 @@ fun FoodTrackerScreen(
     }
 }
 
+private enum class FoodMeal(val label: String) {
+    BREAKFAST("Breakfast"),
+    LUNCH("Lunch"),
+    DINNER("Dinner"),
+    SNACK("Snacks"),
+}
+
 @Composable
-fun FoodCameraScreen(viewModel: FoodViewModel, onComplete: () -> Unit, onCancel: () -> Unit) {
+@OptIn(ExperimentalMaterial3Api::class)
+fun FoodSelectionScreen(
+    viewModel: FoodViewModel,
+    initialDate: LocalDate,
+    initialMealType: String,
+    onBack: () -> Unit,
+    onTrackerChanged: () -> Unit,
+) {
+    val state by viewModel.state.collectAsState()
+    var selectedDateText by rememberSaveable { mutableStateOf(initialDate.toString()) }
+    var selectedMealName by rememberSaveable {
+        mutableStateOf(initialMealType.takeIf { value -> FoodMeal.entries.any { it.name == value } } ?: "SNACK")
+    }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var notes by rememberSaveable { mutableStateOf("") }
+    var localError by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedDate = LocalDate.parse(selectedDateText)
+    val selectedMeal = FoodMeal.valueOf(selectedMealName)
+    val selectedGrams = remember { mutableStateMapOf<Long, String>() }
+    val selectedCatalog = remember { mutableStateMapOf<Long, FoodCatalogItemResponse>() }
+    val selectedFoods = selectedCatalog.values.toList()
+
+    LaunchedEffect(selectedDateText) { viewModel.loadDate(selectedDate) }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onBack) { Text("Back") }
+                Text("${selectedDate.monthValue}/${selectedDate.dayOfMonth} ${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
+                TextButton(onClick = onBack) { Text("Done") }
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                TextButton(onClick = { selectedDateText = selectedDate.minusDays(1).toString() }) { Text("Previous") }
+                TextButton(onClick = { showDatePicker = true }) { Text("Choose date") }
+                TextButton(
+                    onClick = { selectedDateText = selectedDate.plusDays(1).toString() },
+                    enabled = selectedDate < LocalDate.now(),
+                ) { Text("Next") }
+            }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(FoodMeal.entries) { meal ->
+                    if (meal == selectedMeal) Button(onClick = {}) { Text(meal.label) }
+                    else TextButton(onClick = { selectedMealName = meal.name }) { Text(meal.label) }
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Search food") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(onClick = { viewModel.search(query) }, modifier = Modifier.padding(start = 8.dp)) {
+                    Text("Search")
+                }
+            }
+            if (selectedFoods.isNotEmpty()) {
+                Text("Selected foods", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp))
+                NutrientSummary(previewNutrients(selectedFoods, selectedGrams))
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Meal notes (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                localError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Button(
+                    onClick = {
+                        val requests = selectedGrams.mapNotNull { (id, grams) ->
+                            grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
+                                ?.let { CatalogFoodItemRequest(id, it) }
+                        }
+                        if (requests.size != selectedGrams.size) {
+                            localError = "Enter grams from 1 to 5000 for every selected food."
+                        } else {
+                            localError = null
+                            viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, notes.ifBlank { null }) {
+                                selectedGrams.clear()
+                                selectedCatalog.clear()
+                                notes = ""
+                                onTrackerChanged()
+                            }
+                        }
+                    },
+                    enabled = !state.saving,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                ) { Text(if (state.saving) "Saving…" else "Add to ${selectedMeal.label}") }
+            }
+            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            Text("Common foods", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
+        }
+        items(state.catalog, key = { "catalog-${it.id}" }) { food ->
+            CatalogFoodCard(
+                food = food,
+                grams = selectedGrams[food.id],
+                onAdd = {
+                    selectedCatalog[food.id] = food
+                    selectedGrams[food.id] = "100"
+                },
+                onGrams = { selectedGrams[food.id] = it },
+                onRemove = {
+                    selectedGrams.remove(food.id)
+                    selectedCatalog.remove(food.id)
+                },
+            )
+        }
+    }
+
+    if (showDatePicker) {
+        val picker = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    picker.selectedDateMillis?.let {
+                        selectedDateText = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+                            .coerceAtMost(LocalDate.now()).toString()
+                    }
+                    showDatePicker = false
+                }) { Text("Select") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
+        ) { DatePicker(state = picker) }
+    }
+}
+
+@Composable
+fun FoodCameraScreen(
+    viewModel: FoodViewModel,
+    date: LocalDate,
+    mealType: String,
+    onComplete: () -> Unit,
+    onCancel: () -> Unit,
+) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
     var granted by remember {
@@ -255,7 +353,7 @@ fun FoodCameraScreen(viewModel: FoodViewModel, onComplete: () -> Unit, onCancel:
         } else {
             CameraPreview(
                 busy = state.analyzing,
-                onPhoto = { viewModel.analyze(it, onComplete) },
+                onPhoto = { viewModel.analyze(it, date, mealType, onComplete) },
                 onCancel = onCancel,
             )
         }

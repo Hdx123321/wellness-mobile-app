@@ -31,10 +31,16 @@ class FoodViewModelTest {
         assertFalse(viewModel.state.value.loading)
         assertEquals("Chicken breast", viewModel.state.value.catalog.single().name)
 
-        viewModel.saveCatalog(listOf(CatalogFoodItemRequest(1, 200.0)), "Lunch") {}
+        viewModel.saveCatalog(
+            java.time.LocalDate.of(2026, 6, 28),
+            "LUNCH",
+            listOf(CatalogFoodItemRequest(1, 200.0)),
+            "Lunch",
+        ) {}
         advanceUntilIdle()
 
         assertEquals(200.0, repository.catalogRequest?.items?.single()?.grams ?: 0.0, 0.0)
+        assertEquals("LUNCH", repository.catalogRequest?.mealType)
     }
 
     @Test
@@ -43,13 +49,14 @@ class FoodViewModelTest {
         val viewModel = FoodViewModel(repository)
         advanceUntilIdle()
 
-        viewModel.analyze(byteArrayOf(1, 2, 3)) {}
+        viewModel.analyze(byteArrayOf(1, 2, 3), java.time.LocalDate.of(2026, 6, 28), "DINNER") {}
         advanceUntilIdle()
         assertNotNull(viewModel.state.value.analysis)
 
         viewModel.confirmAnalysis {}
         advanceUntilIdle()
         assertEquals("Rice bowl", repository.analysisRequest?.items?.single()?.name)
+        assertEquals("DINNER", repository.analysisRequest?.mealType)
         assertEquals(null, viewModel.state.value.analysis)
     }
 }
@@ -90,6 +97,7 @@ private class FakeFoodRepository : FoodRepository {
         id = 1,
         trackerEntryId = 1,
         recordedAt = "2026-06-28T00:00:00Z",
+        mealType = "LUNCH",
         source = "MANUAL",
         notes = null,
         items = emptyList(),

@@ -116,6 +116,20 @@ class TrackerIntegrationTest {
         .andExpect(status().isNotFound());
   }
 
+  @Test
+  void creatingWeightAgainOnTheSameDayUpdatesTheExistingEntry() throws Exception {
+    String token = register("dailyweight");
+    JsonNode first = createEntry(token, "WEIGHT", "72.4", null);
+    JsonNode second = createEntry(token, "WEIGHT", "71.8", null);
+
+    org.junit.jupiter.api.Assertions.assertEquals(first.path("id").asLong(), second.path("id").asLong());
+    mockMvc.perform(get("/api/tracker-entries?type=WEIGHT")
+            .header("Authorization", bearer(token)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].amount").value(71.8));
+  }
+
   private JsonNode createEntry(String token, String type, String amount, String detail) throws Exception {
     String response = mockMvc.perform(post("/api/tracker-entries")
             .header("Authorization", bearer(token))
@@ -129,6 +143,7 @@ class TrackerIntegrationTest {
   private void createFoodEntry(String token) throws Exception {
     Map<String, Object> body = Map.of(
         "recordedAt", Instant.now().minusSeconds(60).toString(),
+        "mealType", "SNACK",
         "items", java.util.List.of(Map.of("foodId", 1, "grams", 100)),
         "notes", "integration test");
     mockMvc.perform(post("/api/food/entries")

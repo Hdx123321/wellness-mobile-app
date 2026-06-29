@@ -31,6 +31,10 @@ public class FoodEntry {
   @Column(nullable = false, length = 20)
   private FoodEntrySource source;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private MealType mealType;
+
   @Column(length = 1000)
   private String notes;
 
@@ -41,11 +45,12 @@ public class FoodEntry {
   }
 
   public FoodEntry(Long userId, Long trackerEntryId, Instant recordedAt,
-                   FoodEntrySource source, String notes) {
+                   FoodEntrySource source, MealType mealType, String notes) {
     this.userId = userId;
     this.trackerEntryId = trackerEntryId;
     this.recordedAt = recordedAt;
     this.source = source;
+    this.mealType = mealType;
     this.notes = notes;
     this.createdAt = Instant.now();
   }
@@ -55,5 +60,6 @@ public class FoodEntry {
   public Long getTrackerEntryId() { return trackerEntryId; }
   public Instant getRecordedAt() { return recordedAt; }
   public FoodEntrySource getSource() { return source; }
+  public MealType getMealType() { return mealType; }
   public String getNotes() { return notes; }
 }

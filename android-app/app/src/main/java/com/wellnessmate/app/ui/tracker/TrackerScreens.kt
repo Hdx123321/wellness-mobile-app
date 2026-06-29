@@ -63,6 +63,7 @@ import com.wellnessmate.app.ui.advisor.AiAdvisorScreen
 import com.wellnessmate.app.ui.chat.CoachChatScreen
 import com.wellnessmate.app.ui.food.FoodCameraScreen
 import com.wellnessmate.app.ui.food.FoodTrackerScreen
+import com.wellnessmate.app.ui.food.FoodSelectionScreen
 import com.wellnessmate.app.ui.health.HealthProfileScreen
 import com.wellnessmate.app.ui.health.HealthSummaryCard
 import com.wellnessmate.app.ui.health.HeightPickerScreen
@@ -84,7 +85,8 @@ private const val HEIGHT_PICKER = "height-picker"
 private const val TRACKER = "tracker/{type}"
 private const val FORM = "form/{type}/{id}"
 private const val FOOD = "food"
-private const val FOOD_CAMERA = "food-camera"
+private const val FOOD_SELECT = "food-select/{date}/{meal}"
+private const val FOOD_CAMERA = "food-camera/{date}/{meal}"
 
 /** Main post-onboarding navigation for trackers and coach chat. @author TODO(team member) */
 @Composable
@@ -112,7 +114,7 @@ fun MainTrackerNav(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            if (route != FOOD_SELECT && route != FOOD_CAMERA) TopAppBar(
                 title = {
                     Surface(
                         shape = CircleShape,
@@ -220,14 +222,41 @@ fun MainTrackerNav(
                     viewModel = foodViewModel,
                     selectedDate = selectedDate,
                     healthProfileViewModel = healthProfileViewModel,
-                    onTakePhoto = { navController.navigate(FOOD_CAMERA) },
+                    onTakePhoto = { date, meal -> navController.navigate("food-camera/$date/$meal") },
+                    onAddFood = { date, meal -> navController.navigate("food-select/$date/$meal") },
                     onBack = { navController.popBackStack() },
-                    onTrackerChanged = viewModel::refresh,
+                    onTrackerChanged = { viewModel.loadDate(selectedDate) },
                 )
             }
-            composable(FOOD_CAMERA) {
+            composable(
+                route = FOOD_SELECT,
+                arguments = listOf(
+                    navArgument("date") { type = NavType.StringType },
+                    navArgument("meal") { type = NavType.StringType },
+                ),
+            ) { entry ->
+                FoodSelectionScreen(
+                    viewModel = foodViewModel,
+                    initialDate = LocalDate.parse(entry.arguments?.getString("date")),
+                    initialMealType = entry.arguments?.getString("meal") ?: "SNACK",
+                    onBack = {
+                        foodViewModel.loadDate(selectedDate)
+                        navController.popBackStack()
+                    },
+                    onTrackerChanged = { viewModel.loadDate(selectedDate) },
+                )
+            }
+            composable(
+                route = FOOD_CAMERA,
+                arguments = listOf(
+                    navArgument("date") { type = NavType.StringType },
+                    navArgument("meal") { type = NavType.StringType },
+                ),
+            ) { entry ->
                 FoodCameraScreen(
                     viewModel = foodViewModel,
+                    date = LocalDate.parse(entry.arguments?.getString("date")),
+                    mealType = entry.arguments?.getString("meal") ?: "SNACK",
                     onComplete = { navController.popBackStack() },
                     onCancel = { navController.popBackStack() },
                 )
@@ -242,6 +271,7 @@ fun MainTrackerNav(
                 TrackerFormScreen(
                     type = entry.arguments?.getString("type") ?: "WATER",
                     id = entry.arguments?.getLong("id")?.takeIf { it >= 0 },
+                    selectedDate = selectedDate,
                     viewModel = viewModel,
                     onDone = { navController.popBackStack() },
                 )
@@ -360,17 +390,24 @@ private fun TrackerDetailScreen(
         else items(selectedEntries, key = { it.id }) { item ->
             TrackerDayRow(
                 item,
-                editable = selectedDate == LocalDate.now(),
+                editable = true,
                 onEdit = { onEdit(item) },
                 onDelete = { deleteId = item.id },
             )
             HorizontalDivider()
         }
-        if (selectedDate == LocalDate.now()) {
-            item {
-                Button(onClick = { onAdd(type) }, modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-                    Text(if (selectedEntries.isEmpty()) "Add today's data" else "Add another entry")
-                }
+        item {
+            Button(
+                onClick = {
+                    val weight = selectedEntries.firstOrNull().takeIf { type == "WEIGHT" }
+                    if (weight != null) onEdit(weight) else onAdd(type)
+                },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            ) {
+                Text(
+                    if (type == "WEIGHT" && selectedEntries.isNotEmpty()) "Update this day's weight"
+                    else "Add data for this day",
+                )
             }
         }
     }
@@ -408,7 +445,13 @@ private fun TrackerDayRow(item: TrackerEntryResponse, editable: Boolean, onEdit:
 }
 
 @Composable
-private fun TrackerFormScreen(type: String, id: Long?, viewModel: TrackerViewModel, onDone: () -> Unit) {
+private fun TrackerFormScreen(
+    type: String,
+    id: Long?,
+    selectedDate: LocalDate,
+    viewModel: TrackerViewModel,
+    onDone: () -> Unit,
+) {
     val state by viewModel.state.collectAsState()
     val definition = state.types.firstOrNull { it.type == type }
     val existing = id?.let { target -> state.entries.firstOrNull { it.id == target } }
@@ -474,7 +517,7 @@ private fun TrackerFormScreen(type: String, id: Long?, viewModel: TrackerViewMod
                         id = id,
                         request = TrackerEntryRequest(
                             type = type,
-                            recordedAt = existing?.recordedAt ?: Instant.now().toString(),
+                            recordedAt = existing?.recordedAt ?: recordedAt(selectedDate),
                             amount = numeric,
                             detail = detail.ifBlank { null },
                             notes = notes.ifBlank { null },
@@ -493,6 +536,12 @@ private fun TrackerFormScreen(type: String, id: Long?, viewModel: TrackerViewMod
             Text(stringResource(R.string.cancel))
         }
     }
+}
+
+private fun recordedAt(date: LocalDate): String {
+    val zone = ZoneId.systemDefault()
+    return if (date == LocalDate.now(zone)) Instant.now().toString()
+    else date.atTime(12, 0).atZone(zone).toInstant().toString()
 }
 
 @Composable

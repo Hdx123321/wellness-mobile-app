@@ -14,6 +14,9 @@ import org.springframework.data.repository.query.Param;
 public interface TrackerEntryRepository extends JpaRepository<TrackerEntry, Long> {
   Optional<TrackerEntry> findByIdAndUserId(Long id, Long userId);
 
+  Optional<TrackerEntry> findFirstByUserIdAndTrackerTypeAndRecordedAtGreaterThanEqualAndRecordedAtLessThanOrderByIdAsc(
+      Long userId, TrackerType trackerType, Instant from, Instant to);
+
   @Query("""
       select entry from TrackerEntry entry
       where entry.userId = :userId
