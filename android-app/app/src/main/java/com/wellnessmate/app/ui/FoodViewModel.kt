@@ -27,6 +27,8 @@ data class FoodUiState(
     val catalog: List<FoodCatalogItemResponse> = emptyList(),
     val entries: List<FoodEntryResponse> = emptyList(),
     val analysis: FoodAnalysisResponse? = null,
+    val analysisDate: LocalDate? = null,
+    val analysisMealType: String? = null,
     val error: String? = null,
 )
 
@@ -97,6 +99,8 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
     }
 
     fun saveCatalog(
+        date: LocalDate,
+        mealType: String,
         items: List<CatalogFoodItemRequest>,
         notes: String?,
         onSaved: () -> Unit,
@@ -104,10 +108,10 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
         if (_state.value.saving || items.isEmpty()) return
         _state.value = _state.value.copy(saving = true, error = null)
         viewModelScope.launch {
-            repository.create(FoodEntryRequest(Instant.now().toString(), items, notes)).fold(
+            repository.create(FoodEntryRequest(recordedAt(date), mealType, items, notes)).fold(
                 onSuccess = {
                     _state.value = _state.value.copy(saving = false)
-                    refresh()
+                    loadDate(date)
                     onSaved()
                 },
                 onFailure = { _state.value = _state.value.copy(saving = false, error = it.message) },
@@ -115,12 +119,19 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
         }
     }
 
-    fun analyze(image: ByteArray, onComplete: () -> Unit) {
+    fun analyze(image: ByteArray, date: LocalDate, mealType: String, onComplete: () -> Unit) {
         if (_state.value.analyzing) return
         _state.value = _state.value.copy(analyzing = true, analysis = null, error = null)
         viewModelScope.launch {
             repository.analyze(image).fold(
-                onSuccess = { _state.value = _state.value.copy(analyzing = false, analysis = it) },
+                onSuccess = {
+                    _state.value = _state.value.copy(
+                        analyzing = false,
+                        analysis = it,
+                        analysisDate = date,
+                        analysisMealType = mealType,
+                    )
+                },
                 onFailure = { _state.value = _state.value.copy(analyzing = false, error = it.message) },
             )
             onComplete()
@@ -129,6 +140,8 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
 
     fun confirmAnalysis(onSaved: () -> Unit) {
         val analysis = _state.value.analysis ?: return
+        val date = _state.value.analysisDate ?: LocalDate.now()
+        val mealType = _state.value.analysisMealType ?: "SNACK"
         if (_state.value.saving) return
         val items = analysis.items.map {
             AnalyzedFoodItemRequest(
@@ -144,11 +157,18 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
         _state.value = _state.value.copy(saving = true, error = null)
         viewModelScope.launch {
             repository.createAnalyzed(
-                AnalyzedFoodEntryRequest(Instant.now().toString(), items, "Confirmed photo estimate"),
+                AnalyzedFoodEntryRequest(
+                    recordedAt(date), mealType, items, "Confirmed photo estimate",
+                ),
             ).fold(
                 onSuccess = {
-                    _state.value = _state.value.copy(saving = false, analysis = null)
-                    refresh()
+                    _state.value = _state.value.copy(
+                        saving = false,
+                        analysis = null,
+                        analysisDate = null,
+                        analysisMealType = null,
+                    )
+                    loadDate(date)
                     onSaved()
                 },
                 onFailure = { _state.value = _state.value.copy(saving = false, error = it.message) },
@@ -157,13 +177,23 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
     }
 
     fun discardAnalysis() {
-        _state.value = _state.value.copy(analysis = null)
+        _state.value = _state.value.copy(
+            analysis = null,
+            analysisDate = null,
+            analysisMealType = null,
+        )
     }
 
     fun delete(id: Long, onDeleted: () -> Unit) {
+        val date = _state.value.entries.firstOrNull { it.id == id }?.let {
+            runCatching { Instant.parse(it.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate() }.getOrNull()
+        }
         viewModelScope.launch {
             repository.delete(id).fold(
-                onSuccess = { refresh(); onDeleted() },
+                onSuccess = {
+                    if (date == null) refresh() else loadDate(date)
+                    onDeleted()
+                },
                 onFailure = { _state.value = _state.value.copy(error = it.message) },
             )
         }
@@ -178,6 +208,12 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
         val start = month.atDay(1).minusDays(6).atStartOfDay(zone).toInstant()
         val end = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant()
         return start.toString() to end.toString()
+    }
+
+    private fun recordedAt(date: LocalDate): String {
+        val zone = ZoneId.systemDefault()
+        return if (date == LocalDate.now(zone)) Instant.now().toString()
+        else date.atTime(12, 0).atZone(zone).toInstant().toString()
     }
 
     companion object {

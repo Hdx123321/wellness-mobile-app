@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 /** One timestamped value in a built-in user tracker. @author TODO(team member) */
 @Entity
@@ -29,6 +31,9 @@ public class TrackerEntry {
 
   @Column(nullable = false)
   private Instant recordedAt;
+
+  @Column
+  private LocalDate trackingDate;
 
   @Column(nullable = false, precision = 12, scale = 2)
   private BigDecimal amount;
@@ -73,6 +78,8 @@ public class TrackerEntry {
                      String detail, String notes) {
     this.trackerType = trackerType;
     this.recordedAt = recordedAt;
+    this.trackingDate = trackerType == TrackerType.WEIGHT
+        ? recordedAt.atZone(ZoneOffset.UTC).toLocalDate() : null;
     this.amount = amount;
     this.detail = detail;
     this.notes = notes;

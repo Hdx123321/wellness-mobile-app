@@ -8,6 +8,7 @@ import com.wellnessmate.app.data.TrackerEntryResponse
 import com.wellnessmate.app.data.TrackerRepository
 import com.wellnessmate.app.data.TrackerTypeResponse
 import java.time.LocalDate
+import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,7 +90,7 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
             result.fold(
                 onSuccess = {
                     _state.value = _state.value.copy(saving = false)
-                    refresh()
+                    loadDate(Instant.parse(request.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate())
                     onSaved()
                 },
                 onFailure = { _state.value = _state.value.copy(saving = false, error = it.message) },
@@ -98,9 +99,12 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
     }
 
     fun delete(id: Long) {
+        val date = _state.value.entries.firstOrNull { it.id == id }?.let {
+            runCatching { Instant.parse(it.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate() }.getOrNull()
+        }
         viewModelScope.launch {
             repository.delete(id).fold(
-                onSuccess = { refresh() },
+                onSuccess = { if (date == null) refresh() else loadDate(date) },
                 onFailure = { _state.value = _state.value.copy(error = it.message) },
             )
         }

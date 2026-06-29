@@ -142,6 +142,7 @@ data class CatalogFoodItemRequest(val foodId: Long, val grams: Double)
 
 data class FoodEntryRequest(
     val recordedAt: String,
+    val mealType: String,
     val items: List<CatalogFoodItemRequest>,
     val notes: String?,
 )
@@ -158,6 +159,7 @@ data class AnalyzedFoodItemRequest(
 
 data class AnalyzedFoodEntryRequest(
     val recordedAt: String,
+    val mealType: String,
     val items: List<AnalyzedFoodItemRequest>,
     val notes: String?,
 )
@@ -174,6 +176,7 @@ data class FoodEntryResponse(
     val id: Long,
     val trackerEntryId: Long,
     val recordedAt: String,
+    val mealType: String,
     val source: String,
     val notes: String?,
     val items: List<FoodEntryItemResponse>,
