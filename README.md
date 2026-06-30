@@ -69,7 +69,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-To enable food-photo analysis, set `LLM_API_KEY` in the untracked `.env` file. `LLM_MODEL` defaults to `gpt-5.5` and can be overridden for an account that uses another vision-capable model. The key is used only by the backend and must never be embedded in the Android app.
+To enable food-photo analysis, set backend-only AI credentials in the untracked `.env` file. Food-photo analysis can use the shared `LLM_API_KEY` / `LLM_MODEL`, or its own `FOOD_LLM_API_KEY` / `FOOD_LLM_MODEL` / `FOOD_LLM_API_BASE_URL` override. For Doubao Ark OpenAI-compatible Responses usage, set `FOOD_LLM_API_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3` and `FOOD_LLM_MODEL=doubao-seed-2-0-lite-260428`. Do not use `https://ark.cn-beijing.volces.com/api/v3` for this project because it can incur extra charges. Keys are used only by the backend and must never be embedded in the Android app.
 
 Backend health: `http://localhost:18080/actuator/health`
 

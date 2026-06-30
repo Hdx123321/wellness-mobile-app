@@ -11,10 +11,12 @@ import com.wellnessmate.food.api.FoodNutrients;
 import com.wellnessmate.food.domain.FoodCatalogItem;
 import com.wellnessmate.food.domain.FoodEntry;
 import com.wellnessmate.food.domain.FoodEntryItem;
+import com.wellnessmate.food.domain.FoodEntryPhoto;
 import com.wellnessmate.food.domain.FoodEntrySource;
 import com.wellnessmate.food.domain.MealType;
 import com.wellnessmate.food.repository.FoodCatalogRepository;
 import com.wellnessmate.food.repository.FoodEntryItemRepository;
+import com.wellnessmate.food.repository.FoodEntryPhotoRepository;
 import com.wellnessmate.food.repository.FoodEntryRepository;
 import com.wellnessmate.tracker.domain.TrackerEntry;
 import com.wellnessmate.tracker.domain.TrackerSource;
@@ -42,13 +44,16 @@ public class FoodService {
   private final FoodCatalogRepository catalog;
   private final FoodEntryRepository foodEntries;
   private final FoodEntryItemRepository foodItems;
+  private final FoodEntryPhotoRepository foodPhotos;
   private final TrackerEntryRepository trackerEntries;
 
   public FoodService(FoodCatalogRepository catalog, FoodEntryRepository foodEntries,
-                     FoodEntryItemRepository foodItems, TrackerEntryRepository trackerEntries) {
+                     FoodEntryItemRepository foodItems, FoodEntryPhotoRepository foodPhotos,
+                     TrackerEntryRepository trackerEntries) {
     this.catalog = catalog;
     this.foodEntries = foodEntries;
     this.foodItems = foodItems;
+    this.foodPhotos = foodPhotos;
     this.trackerEntries = trackerEntries;
   }
 
@@ -89,6 +94,16 @@ public class FoodService {
         normalized(request.notes()), snapshots);
   }
 
+  @Transactional
+  public FoodEntryResponse createFromAnalysisPhoto(Long userId, AnalyzedFoodEntryRequest request,
+                                                   String contentType, byte[] thumbnail) {
+    validateThumbnail(contentType, thumbnail);
+    FoodEntryResponse response = createFromAnalysis(userId, request);
+    foodPhotos.save(new FoodEntryPhoto(response.id(), normalizedContentType(contentType), thumbnail));
+    return new FoodEntryResponse(response.id(), response.trackerEntryId(), response.recordedAt(),
+        response.mealType(), response.source(), response.notes(), response.items(), response.totals(), true);
+  }
+
   @Transactional(readOnly = true)
   public List<FoodEntryResponse> list(Long userId, Instant from, Instant to) {
     if (from == null || to == null || !from.isBefore(to)) {
@@ -99,16 +114,29 @@ public class FoodService {
     Map<Long, List<FoodEntryItem>> grouped = entries.isEmpty() ? Map.of() : foodItems
         .findByFoodEntryIdInOrderById(entries.stream().map(FoodEntry::getId).toList())
         .stream().collect(Collectors.groupingBy(FoodEntryItem::getFoodEntryId));
+    Map<Long, Boolean> photoAvailable = entries.isEmpty() ? Map.of() : foodPhotos
+        .findByFoodEntryIdIn(entries.stream().map(FoodEntry::getId).toList())
+        .stream().collect(Collectors.toMap(FoodEntryPhoto::getFoodEntryId, photo -> true));
     return entries.stream().map(entry -> {
       List<FoodEntryItem> items = grouped.getOrDefault(entry.getId(), List.of());
-      return FoodEntryResponse.from(entry, items, total(items));
+      return FoodEntryResponse.from(entry, items, total(items),
+          photoAvailable.getOrDefault(entry.getId(), false));
     }).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public FoodEntryPhoto thumbnail(Long userId, Long foodEntryId) {
+    FoodEntry entry = foodEntries.findByIdAndUserId(foodEntryId, userId)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "FOOD_ENTRY_NOT_FOUND", "Food entry not found"));
+    return foodPhotos.findByFoodEntryId(entry.getId())
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "FOOD_THUMBNAIL_NOT_FOUND", "Food thumbnail not found"));
   }
 
   @Transactional
   public void delete(Long userId, Long id) {
     FoodEntry entry = foodEntries.findByIdAndUserId(id, userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "FOOD_ENTRY_NOT_FOUND", "Food entry not found"));
+    foodPhotos.deleteByFoodEntryId(entry.getId());
     trackerEntries.deleteById(entry.getTrackerEntryId());
   }
 
@@ -173,6 +201,20 @@ public class FoodService {
 
   private String normalized(String value) {
     return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  private void validateThumbnail(String contentType, byte[] thumbnail) {
+    if (thumbnail == null || thumbnail.length == 0 || thumbnail.length > 1024 * 1024) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_FOOD_THUMBNAIL",
+          "Thumbnail must be between 1 byte and 1 MB");
+    }
+    if (!normalizedContentType(contentType).startsWith("image/")) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_FOOD_THUMBNAIL", "Thumbnail must be an image");
+    }
+  }
+
+  private String normalizedContentType(String value) {
+    return value == null || value.isBlank() ? "image/jpeg" : value.toLowerCase();
   }
 
   private record ItemSnapshot(Long catalogItemId, String name, BigDecimal grams, FoodNutrients nutrients) {

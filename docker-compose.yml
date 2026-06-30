@@ -11,7 +11,7 @@ services:
     volumes:
       - wellness-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -28,6 +28,9 @@ services:
       LLM_API_BASE_URL: ${LLM_API_BASE_URL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
+      FOOD_LLM_API_BASE_URL: ${FOOD_LLM_API_BASE_URL:-}
+      FOOD_LLM_API_KEY: ${FOOD_LLM_API_KEY:-}
+      FOOD_LLM_MODEL: ${FOOD_LLM_MODEL:-}
     depends_on:
       mysql:
         condition: service_healthy
