@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +27,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -36,12 +34,9 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -57,7 +52,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -214,17 +208,13 @@ fun FoodSelectionScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
     var detailFoodId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var showSelectedFoods by rememberSaveable { mutableStateOf(false) }
     val selectedDate = LocalDate.parse(selectedDateText)
     val selectedMeal = FoodMeal.valueOf(selectedMealName)
     val selectedGrams = remember { mutableStateMapOf<Long, String>() }
     val selectedCatalog = remember { mutableStateMapOf<Long, FoodCatalogItemResponse>() }
-    val selectedFoods = selectedCatalog.values.toList()
-    val selectedNutrients = previewNutrients(selectedFoods, selectedGrams)
-
     LaunchedEffect(selectedDateText) { viewModel.loadDate(selectedDate) }
 
-    fun saveSelectedFoods() {
+    fun saveAndGoBack() {
         val requests = selectedGrams.mapNotNull { (id, grams) ->
             grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
                 ?.let { CatalogFoodItemRequest(id, it) }
@@ -235,10 +225,8 @@ fun FoodSelectionScreen(
         }
         localError = null
         viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, null) {
-            selectedGrams.clear()
-            selectedCatalog.clear()
-            showSelectedFoods = false
             onTrackerChanged()
+            onBack()
         }
     }
 
@@ -251,7 +239,7 @@ fun FoodSelectionScreen(
         ) {
             TextButton(onClick = onBack) { Text("Back") }
             Text("${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = onBack) { Text("Done") }
+            TextButton(onClick = ::saveAndGoBack) { Text("Done") }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -354,14 +342,9 @@ fun FoodSelectionScreen(
             }
         }
 
-        FoodSelectionBottomBar(
-            mealLabel = selectedMeal.label,
-            selectedCount = selectedFoods.size,
-            calories = selectedNutrients.calories,
-            saving = state.saving,
-            onSummary = { if (selectedFoods.isNotEmpty()) showSelectedFoods = true },
-            onSave = ::saveSelectedFoods,
-        )
+        (localError ?: state.error)?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 4.dp))
+        }
     }
 
     if (showDatePicker) {
@@ -403,115 +386,6 @@ fun FoodSelectionScreen(
         )
     }
 
-    if (showSelectedFoods) {
-        SelectedFoodsBottomSheet(
-            mealLabel = selectedMeal.label,
-            foods = selectedFoods,
-            grams = selectedGrams,
-            saving = state.saving,
-            onRemove = { id ->
-                selectedGrams.remove(id)
-                selectedCatalog.remove(id)
-                if (selectedCatalog.isEmpty()) showSelectedFoods = false
-            },
-            onSave = ::saveSelectedFoods,
-            onDismiss = { showSelectedFoods = false },
-        )
-    }
-}
-
-@Composable
-private fun FoodSelectionBottomBar(
-    mealLabel: String,
-    selectedCount: Int,
-    calories: Double,
-    saving: Boolean,
-    onSummary: () -> Unit,
-    onSave: () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            TextButton(onClick = onSummary, modifier = Modifier.weight(1f)) {
-                Column(horizontalAlignment = Alignment.Start) {
-                    Text("🍽  $mealLabel · $selectedCount selected", style = MaterialTheme.typography.titleMedium)
-                    Text("${format(calories)} kcal · tap to review", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            Button(
-                onClick = onSave,
-                enabled = selectedCount > 0 && !saving,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B978)),
-            ) { Text(if (saving) "Saving…" else "Done") }
-        }
-    }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun SelectedFoodsBottomSheet(
-    mealLabel: String,
-    foods: List<FoodCatalogItemResponse>,
-    grams: Map<Long, String>,
-    saving: Boolean,
-    onRemove: (Long) -> Unit,
-    onSave: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val nutrients = previewNutrients(foods, grams)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("${foods.size} selected foods", style = MaterialTheme.typography.titleLarge)
-                    Text("${format(nutrients.calories)} kcal total · $mealLabel")
-                }
-                TextButton(onClick = onDismiss) { Text("Close") }
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
-                items(foods, key = { "selected-${it.id}" }) { food ->
-                    val amount = grams[food.id].orEmpty()
-                    val calories = food.caloriesPer100g * (amount.toDoubleOrNull() ?: 0.0) / 100.0
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(food.name, style = MaterialTheme.typography.titleMedium)
-                            Text("${format(calories)} kcal", style = MaterialTheme.typography.bodySmall)
-                        }
-                        Text("${format(amount.toDoubleOrNull() ?: 0.0)} g")
-                        TextButton(onClick = { onRemove(food.id) }) { Text("Delete") }
-                    }
-                    HorizontalDivider()
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("🍽  $mealLabel", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Button(
-                    onClick = onSave,
-                    enabled = foods.isNotEmpty() && !saving,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B978)),
-                ) { Text(if (saving) "Saving…" else "Done") }
-            }
-        }
-    }
 }
 
 @Composable
@@ -758,17 +632,6 @@ private fun totalEntries(entries: List<FoodEntryResponse>) = FoodNutrients(
     carbohydrateGrams = entries.sumOf { it.totals.carbohydrateGrams },
     fatGrams = entries.sumOf { it.totals.fatGrams },
     fiberGrams = entries.sumOf { it.totals.fiberGrams },
-)
-
-private fun previewNutrients(
-    foods: List<FoodCatalogItemResponse>,
-    grams: Map<Long, String>,
-) = FoodNutrients(
-    calories = foods.sumOf { it.caloriesPer100g * (grams[it.id]?.toDoubleOrNull() ?: 0.0) / 100.0 },
-    proteinGrams = foods.sumOf { it.proteinPer100g * (grams[it.id]?.toDoubleOrNull() ?: 0.0) / 100.0 },
-    carbohydrateGrams = foods.sumOf { it.carbohydratePer100g * (grams[it.id]?.toDoubleOrNull() ?: 0.0) / 100.0 },
-    fatGrams = foods.sumOf { it.fatPer100g * (grams[it.id]?.toDoubleOrNull() ?: 0.0) / 100.0 },
-    fiberGrams = foods.sumOf { it.fiberPer100g * (grams[it.id]?.toDoubleOrNull() ?: 0.0) / 100.0 },
 )
 
 private fun format(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else "%.1f".format(value)
