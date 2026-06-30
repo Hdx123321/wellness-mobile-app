@@ -41,6 +41,7 @@ PR #2：`https://github.com/Hdx123321/wellness-mobile-app/pull/2`
 250c48d Add meal tracking and daily weight constraints
 70e3c32 Add AI advisor collaboration guide
 52fd9fb Complete wellness tracking and advisor flows
+b0bfe48 feat: session expiry login redirect, calendar date picker, food page redesign
 ```
 
 交接时远程 `main` 最新提交为：
@@ -49,7 +50,9 @@ PR #2：`https://github.com/Hdx123321/wellness-mobile-app/pull/2`
 de18221 Merge pull request #2 from Hdx123321/codex/wellness-core-features
 ```
 
-接手后不要继续在已合并的 `codex/wellness-core-features` 上开发。应执行：
+**当前分支 `codex/wellness-core-features` 有 1 个未推送的提交 (b0bfe48)**，包含本次会话的三个功能改动（见第 4 节）。该提交尚未创建 PR，也尚未合并到 main。
+
+接手后如需继续在当前分支工作，直接在此基础上开发。如需开新分支：
 
 ```powershell
 git fetch origin
@@ -104,7 +107,86 @@ FOOD / WEIGHT / WORKOUT / STEPS / SLEEP / WATER
 - Android 底部导航为 `Home / AI Advisor / Coach`；
 - AI Advisor 会读取用户档案、最近七天 Tracker 和近期对话。
 
-## 4. 最近一次 Tracker 改动
+## 4. 本次会话新增功能 (commit b0bfe48)
+
+### 4.1 会话过期自动跳转登录
+
+**问题**：JWT Token（2 小时过期）过期后，API 返回 401，但 App 只显示一行红色错误文字，用户不知道发生了什么。
+
+**方案**：事件驱动架构，解耦网络层和 UI 层。
+
+```
+Repositories.kt (401) → SessionManager.expireSession()
+                              ↓ StateFlow
+AuthViewModel.init 观察 → logout() → 清除 Token → 跳转 LoginScreen
+```
+
+新增文件：
+- `android-app/.../data/SessionManager.kt` — 全局单例，持有 `MutableStateFlow<Boolean>`，所有 Repository 共享
+
+修改文件：
+- `Repositories.kt`：`apiResult()` 函数中 401 分支调用 `SessionManager.expireSession()`
+- `AuthViewModel.kt`：`init` 块中 `viewModelScope.launch` 收集 `SessionManager.expired`，收到 true 时调用 `logout()`
+
+### 4.2 日期选择按钮精简
+
+**问题**：食物选择页三个 TextButton（Previous / Choose date / Next）占据一整行，操作繁琐。
+
+**方案**：替换为一个 📅 emoji 按钮，点击弹出 Material3 `DatePickerDialog`，一次选择搞定。
+
+修改文件：
+- `FoodScreens.kt`：移除三个按钮，添加 `showDatePicker` 状态和 `DatePickerDialog`
+
+### 4.3 食物页重设计（薄荷健康风格）
+
+**问题**：原食物选择页只有一个平铺列表，没有分类、没有分量选项、没有详情页。
+
+**方案**：三层改动（数据库 → 后端 → Android）。
+
+#### 数据库层
+
+新增 V8 migration（`V8__food_categories_and_servings.sql`）：
+- `food_categories` 表：7 个分类（主食、肉蛋、蔬菜、水果、乳制品、坚果豆类、油脂调味）
+- `food_serving_sizes` 表：每食物多个分量选项（克 + 中文标签，如"小碗/150g""中碗/200g""大碗/300g"），支持 `is_default` 和排序
+- `food_catalog_items` 增加 `category_id` 和 `image_url` 列
+- 所有现有食物分配分类和默认 100g 分量
+
+**注意**：H2（测试用）不支持一条 `ALTER TABLE` 加多列，V8 拆成了三条独立的 ALTER。
+
+#### 后端层
+
+新增文件（`backend/.../food/`）：
+- `domain/FoodCategory.java`、`domain/FoodServingSize.java`
+- `repository/FoodCategoryRepository.java`、`FoodServingSizeRepository.java`
+- `api/FoodCategoryResponse.java`、`FoodDetailResponse.java`、`ServingSizeResponse.java`
+
+修改文件：
+- `FoodCatalogItem.java`：增加 `categoryId`、`imageUrl` 字段
+- `FoodCatalogRepository.java`：search query 增加 `categoryId` 过滤
+- `FoodService.java`：新增 `listCategories()`、`foodDetail(id)`，`search()` 支持 categoryId
+- `FoodController.java`：新增 `GET /api/food/categories`、`GET /api/food/catalog/{id}`，`/catalog` 增加 `categoryId` 参数
+
+#### Android 层
+
+新增文件：
+- `ui/food/FoodDetailScreen.kt`：食物详情页
+  - 营养信息卡片（per 100g）
+  - FilterChip 分量选择（1 碗 / 小碗 / 大碗...）
+  - 自定义克数输入
+  - 实时营养估算（按所选克数等比例计算）
+  - 加入按钮（1-5000g 校验）
+
+修改文件：
+- `FoodScreens.kt`：完全重写 `FoodSelectionScreen`
+  - 左侧分类侧边栏（LazyColumn + TextButton，支持"全部"）
+  - 右侧食物列表（`CompactFoodCard`，显示名称 + 每 100g 热量 + 快速添加/移除按钮 + 克数输入）
+  - 点击食物卡片 → 导航到 FoodDetailScreen
+- `FoodViewModel.kt`：新增 `categories`、`selectedCategoryId`、`foodDetail`、`detailLoading` 状态；新增 `selectCategory()`、`loadFoodDetail()`、`clearDetail()` 方法
+- `Models.kt`：新增 `FoodCategoryResponse`、`ServingSizeResponse`、`FoodDetailResponse`；`FoodCatalogItemResponse` 增加 `categoryId`、`imageUrl`
+- `WellnessApi.kt`：新增 `foodCategories()`、`foodDetail(id)` 端点
+- `TrackerScreens.kt`：新增 `FOOD_DETAIL` 路由，FoodDetailScreen 集成
+
+## 5. 最近一次 Tracker 改动
 
 数据库迁移：
 
@@ -139,7 +221,7 @@ Food 创建请求示例：
 
 注意：`POST /api/food/entries/analyzed` 同样要求 `mealType`。调整拍照识别时不能丢失用户选择的日期和餐次。
 
-## 5. AI 与拍照识别的协作边界
+## 6. AI 与拍照识别的协作边界
 
 AI Advisor 和食物拍照识别主要交由另一位协作者负责。Claude 修改以下内容前必须先确认并同步：
 
@@ -158,8 +240,16 @@ android-app/app/src/main/java/com/wellnessmate/app/data/Models.kt
 android-app/app/src/main/java/com/wellnessmate/app/data/WellnessApi.kt
 android-app/app/src/main/java/com/wellnessmate/app/data/Repositories.kt
 android-app/app/src/main/java/com/wellnessmate/app/data/AppContainer.kt
+android-app/app/src/main/java/com/wellnessmate/app/data/SessionManager.kt
+android-app/app/src/main/java/com/wellnessmate/app/ui/AuthViewModel.kt
+android-app/app/src/main/java/com/wellnessmate/app/ui/FoodViewModel.kt
+android-app/app/src/main/java/com/wellnessmate/app/ui/food/FoodScreens.kt
+android-app/app/src/main/java/com/wellnessmate/app/ui/food/FoodDetailScreen.kt
 android-app/app/src/main/java/com/wellnessmate/app/MainActivity.kt
 android-app/app/src/main/java/com/wellnessmate/app/ui/tracker/TrackerScreens.kt
+backend/src/main/java/com/wellnessmate/food/api/FoodController.java
+backend/src/main/java/com/wellnessmate/food/service/FoodService.java
+backend/src/main/java/com/wellnessmate/food/domain/FoodCatalogItem.java
 backend/src/main/resources/application.yml
 docker-compose.yml
 .env.example
@@ -172,7 +262,7 @@ docker-compose.yml
 3. 是否存在兼容性影响；
 4. 预计合并顺序。
 
-## 6. RAG 与架构方向
+## 7. RAG 与架构方向
 
 当前决定：暂不拆微服务，先保持模块化单体。
 
@@ -186,7 +276,7 @@ docker-compose.yml
 - 先抽出 `LlmClient`、`ContextAssembler` 和多个 Context Provider，再增加 RAG；
 - 验证效果、成本、隔离和删除能力后，再考虑拆出独立 AI 服务。
 
-## 7. 环境与运行
+## 8. 环境与运行
 
 创建本地配置：
 
@@ -201,6 +291,12 @@ docker compose up -d --build
 Invoke-RestMethod http://localhost:18080/actuator/health
 ```
 
+**Windows JDK 注意**：系统 `JAVA_HOME` 可能指向 JDK 8。后端需要 JDK 21+，Android Gradle 需要 JDK 17+。每次新开终端都要设置：
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-25"
+```
+
 Android Studio 应打开 `android-app`。模拟器访问宿主机后端使用：
 
 ```text
@@ -209,19 +305,20 @@ http://10.0.2.2:18080/
 
 真实 `LLM_API_KEY` 只能放在后端环境变量中，禁止写入 Android、Gradle、Manifest、代码、日志或提交记录。
 
-## 8. 已完成验证
+## 9. 已完成验证
 
-最近一次完整验证结果：
+最近一次完整验证结果（2026-06-30）：
 
 - 后端测试：17 个通过；
 - Android 单元测试通过；
-- Android Debug APK 构建通过；
-- V6、V7 在 H2 测试环境通过；
-- V6、V7 在 MySQL 8.4 实际应用成功；
+- Android Debug APK 构建通过 + 模拟器安装成功；
+- V6、V7、V8 在 H2 测试环境通过；
+- V8 在 MySQL 8.4 实际应用成功；
 - 后端健康检查返回 `UP`；
 - Android 模拟器验证了 Food 四餐布局、食物选择页和隐藏全局顶栏；
+- 模拟器验证了食物分类侧边栏、日历按钮、食物详情页分量选择；
 - API smoke test 验证同日两次提交 Weight 返回相同 ID，最终只保存新数值；
-- API smoke test验证 Food entry 正确保存并返回 `mealType`。
+- API smoke test 验证 Food entry 正确保存并返回 `mealType`。
 
 重新验证命令：
 
@@ -236,9 +333,22 @@ cd ..
 git diff --check
 ```
 
-## 9. 开发约束
+Android 编译前确保 JAVA_HOME 指向 JDK 17+（不是系统默认的 JDK 8）：
 
-- 不修改已经共享的 V1-V7 migration；数据库变化只能新增 V8 或更高版本；
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-25"
+.\gradlew.bat testDebugUnitTest assembleDebug
+```
+
+模拟器安装：
+
+```powershell
+adb install -r android-app\app\build\outputs\apk\debug\app-debug.apk
+```
+
+## 10. 开发约束
+
+- 不修改已经共享的 V1-V8 migration；数据库变化只能新增 V9 或更高版本；
 - 一个 PR 只处理一个清晰目标；
 - 不顺手重构或格式化无关模块；
 - 不提交 `.env`、密钥、APK、`build/`、`target/`、数据库卷或 `local.properties`；
@@ -248,7 +358,7 @@ git diff --check
 - 所有用户数据查询必须进行用户隔离；
 - 修改前先加或调整可验证测试，完成后运行后端和 Android 检查。
 
-## 10. 建议的接手顺序
+## 11. 建议的接手顺序
 
 1. 更新本地 `main` 并创建新的 `codex/` 分支；
 2. 阅读交接文档和 API 文档；
