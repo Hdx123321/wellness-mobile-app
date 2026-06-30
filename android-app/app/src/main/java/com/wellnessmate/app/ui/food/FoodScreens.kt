@@ -65,6 +65,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.wellnessmate.app.data.CatalogFoodItemRequest
 import com.wellnessmate.app.data.FoodCatalogItemResponse
+import com.wellnessmate.app.data.FoodEntryItemResponse
 import com.wellnessmate.app.data.FoodEntryResponse
 import com.wellnessmate.app.data.FoodNutrients
 import com.wellnessmate.app.ui.FoodViewModel
@@ -221,6 +222,13 @@ fun FoodSelectionScreen(
     val selectedCatalog = remember { mutableStateMapOf<Long, FoodCatalogItemResponse>() }
     val selectedFoods = selectedCatalog.values.toList()
     val selectedNutrients = previewNutrients(selectedFoods, selectedGrams)
+    // 这顿餐已有的食物（从已保存的 entries 中取）
+    val existingMealItems = state.entries
+        .filter { it.mealType == selectedMeal.name }
+        .flatMap { it.items }
+    val existingMealCalories = existingMealItems.sumOf { it.nutrients.calories }
+    val basketItemCount = existingMealItems.size + selectedFoods.size
+    val basketCalories = existingMealCalories + selectedNutrients.calories
 
     LaunchedEffect(selectedDateText) { viewModel.loadDate(selectedDate) }
 
@@ -354,10 +362,10 @@ fun FoodSelectionScreen(
 
         FoodSelectionBottomBar(
             mealLabel = selectedMeal.label,
-            selectedCount = selectedFoods.size,
-            calories = selectedNutrients.calories,
+            selectedCount = basketItemCount,
+            calories = basketCalories,
             saving = state.saving,
-            onSummary = { if (selectedFoods.isNotEmpty()) showSelectedFoods = true },
+            onSummary = { if (basketItemCount > 0) showSelectedFoods = true },
             onSave = ::saveSelectedFoods,
         )
     }
@@ -404,7 +412,8 @@ fun FoodSelectionScreen(
     if (showSelectedFoods) {
         SelectedFoodsBottomSheet(
             mealLabel = selectedMeal.label,
-            foods = selectedFoods,
+            existingItems = existingMealItems,
+            newFoods = selectedFoods,
             grams = selectedGrams,
             saving = state.saving,
             onRemove = { id ->
@@ -452,14 +461,17 @@ private fun FoodSelectionBottomBar(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun SelectedFoodsBottomSheet(
     mealLabel: String,
-    foods: List<FoodCatalogItemResponse>,
+    existingItems: List<FoodEntryItemResponse>,
+    newFoods: List<FoodCatalogItemResponse>,
     grams: Map<Long, String>,
     saving: Boolean,
     onRemove: (Long) -> Unit,
     onSave: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val nutrients = previewNutrients(foods, grams)
+    val newNutrients = previewNutrients(newFoods, grams)
+    val existingCalories = existingItems.sumOf { it.nutrients.calories }
+    val totalCalories = existingCalories + newNutrients.calories
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -471,14 +483,30 @@ private fun SelectedFoodsBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
-                    Text("${foods.size} selected foods", style = MaterialTheme.typography.titleLarge)
-                    Text("${format(nutrients.calories)} kcal total · $mealLabel")
+                    Text("${existingItems.size + newFoods.size} items in $mealLabel", style = MaterialTheme.typography.titleLarge)
+                    Text("${format(totalCalories)} kcal total")
                 }
                 TextButton(onClick = onDismiss) { Text("Close") }
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
-                items(foods, key = { "selected-${it.id}" }) { food ->
+                // 已保存的食物（不可删）
+                items(existingItems, key = { "existing-${it.id}" }) { item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(item.name, style = MaterialTheme.typography.titleMedium)
+                            Text("${format(item.nutrients.calories)} kcal", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text("${format(item.grams)} g", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    HorizontalDivider()
+                }
+                // 本次新选的食物（可删）
+                items(newFoods, key = { "new-${it.id}" }) { food ->
                     val amount = grams[food.id].orEmpty()
                     val calories = food.caloriesPer100g * (amount.toDoubleOrNull() ?: 0.0) / 100.0
                     Row(
@@ -504,7 +532,7 @@ private fun SelectedFoodsBottomSheet(
                 Text("🍽  $mealLabel", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Button(
                     onClick = onSave,
-                    enabled = foods.isNotEmpty() && !saving,
+                    enabled = newFoods.isNotEmpty() && !saving,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B978)),
                 ) { Text(if (saving) "Saving…" else "Done") }
             }
