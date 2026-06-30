@@ -20,14 +20,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -35,9 +36,12 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,8 +57,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -198,7 +202,6 @@ fun FoodSelectionScreen(
     viewModel: FoodViewModel,
     initialDate: LocalDate,
     initialMealType: String,
-    onFoodDetail: (Long) -> Unit,
     onBack: () -> Unit,
     onTrackerChanged: () -> Unit,
 ) {
@@ -209,15 +212,35 @@ fun FoodSelectionScreen(
     }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
-    var notes by rememberSaveable { mutableStateOf("") }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
+    var detailFoodId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showSelectedFoods by rememberSaveable { mutableStateOf(false) }
     val selectedDate = LocalDate.parse(selectedDateText)
     val selectedMeal = FoodMeal.valueOf(selectedMealName)
     val selectedGrams = remember { mutableStateMapOf<Long, String>() }
     val selectedCatalog = remember { mutableStateMapOf<Long, FoodCatalogItemResponse>() }
     val selectedFoods = selectedCatalog.values.toList()
+    val selectedNutrients = previewNutrients(selectedFoods, selectedGrams)
 
     LaunchedEffect(selectedDateText) { viewModel.loadDate(selectedDate) }
+
+    fun saveSelectedFoods() {
+        val requests = selectedGrams.mapNotNull { (id, grams) ->
+            grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
+                ?.let { CatalogFoodItemRequest(id, it) }
+        }
+        if (requests.isEmpty() || requests.size != selectedGrams.size) {
+            localError = "Enter grams from 1 to 5000 for every selected food."
+            return
+        }
+        localError = null
+        viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, null) {
+            selectedGrams.clear()
+            selectedCatalog.clear()
+            showSelectedFoods = false
+            onTrackerChanged()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         // 顶栏：返回 + 日期 + 餐次
@@ -267,45 +290,9 @@ fun FoodSelectionScreen(
             }
         }
 
-        // 已选食物 + 保存
-        if (selectedFoods.isNotEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Selected foods", style = MaterialTheme.typography.titleMedium)
-                    NutrientSummary(previewNutrients(selectedFoods, selectedGrams))
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        label = { Text("Meal notes (optional)") },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    )
-                    localError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    Button(
-                        onClick = {
-                            val requests = selectedGrams.mapNotNull { (id, grams) ->
-                                grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
-                                    ?.let { CatalogFoodItemRequest(id, it) }
-                            }
-                            if (requests.size != selectedGrams.size) {
-                                localError = "Enter grams from 1 to 5000 for every selected food."
-                            } else {
-                                localError = null
-                                viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, notes.ifBlank { null }) {
-                                    selectedGrams.clear()
-                                    selectedCatalog.clear()
-                                    notes = ""
-                                    onTrackerChanged()
-                                }
-                            }
-                        },
-                        enabled = !state.saving,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(if (state.saving) "Saving…" else "Add to ${selectedMeal.label}") }
-                }
-            }
+        (localError ?: state.error)?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 4.dp))
         }
-
-        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 4.dp)) }
 
         // 主体：分类侧边栏 + 食物列表
         Row(modifier = Modifier.weight(1f)) {
@@ -357,16 +344,24 @@ fun FoodSelectionScreen(
                             selectedCatalog[food.id] = food
                             selectedGrams[food.id] = "100"
                         },
-                        onGrams = { selectedGrams[food.id] = it },
                         onRemove = {
                             selectedGrams.remove(food.id)
                             selectedCatalog.remove(food.id)
                         },
-                        onClick = { onFoodDetail(food.id) },
+                        onClick = { detailFoodId = food.id },
                     )
                 }
             }
         }
+
+        FoodSelectionBottomBar(
+            mealLabel = selectedMeal.label,
+            selectedCount = selectedFoods.size,
+            calories = selectedNutrients.calories,
+            saving = state.saving,
+            onSummary = { if (selectedFoods.isNotEmpty()) showSelectedFoods = true },
+            onSave = ::saveSelectedFoods,
+        )
     }
 
     if (showDatePicker) {
@@ -386,6 +381,136 @@ fun FoodSelectionScreen(
             },
             dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
         ) { DatePicker(state = picker) }
+    }
+
+    detailFoodId?.let { foodId ->
+        FoodDetailBottomSheet(
+            foodId = foodId,
+            date = selectedDate,
+            mealLabel = selectedMeal.label,
+            viewModel = viewModel,
+            onAdd = { grams ->
+                state.catalog.firstOrNull { it.id == foodId }?.let { food ->
+                    selectedCatalog[foodId] = food
+                    selectedGrams[foodId] = if (grams % 1.0 == 0.0) {
+                        grams.toLong().toString()
+                    } else {
+                        grams.toString()
+                    }
+                }
+            },
+            onDismiss = { detailFoodId = null },
+        )
+    }
+
+    if (showSelectedFoods) {
+        SelectedFoodsBottomSheet(
+            mealLabel = selectedMeal.label,
+            foods = selectedFoods,
+            grams = selectedGrams,
+            saving = state.saving,
+            onRemove = { id ->
+                selectedGrams.remove(id)
+                selectedCatalog.remove(id)
+                if (selectedCatalog.isEmpty()) showSelectedFoods = false
+            },
+            onSave = ::saveSelectedFoods,
+            onDismiss = { showSelectedFoods = false },
+        )
+    }
+}
+
+@Composable
+private fun FoodSelectionBottomBar(
+    mealLabel: String,
+    selectedCount: Int,
+    calories: Double,
+    saving: Boolean,
+    onSummary: () -> Unit,
+    onSave: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            TextButton(onClick = onSummary, modifier = Modifier.weight(1f)) {
+                Column(horizontalAlignment = Alignment.Start) {
+                    Text("🍽  $mealLabel · $selectedCount selected", style = MaterialTheme.typography.titleMedium)
+                    Text("${format(calories)} kcal · tap to review", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Button(
+                onClick = onSave,
+                enabled = selectedCount > 0 && !saving,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B978)),
+            ) { Text(if (saving) "Saving…" else "Done") }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SelectedFoodsBottomSheet(
+    mealLabel: String,
+    foods: List<FoodCatalogItemResponse>,
+    grams: Map<Long, String>,
+    saving: Boolean,
+    onRemove: (Long) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val nutrients = previewNutrients(foods, grams)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text("${foods.size} selected foods", style = MaterialTheme.typography.titleLarge)
+                    Text("${format(nutrients.calories)} kcal total · $mealLabel")
+                }
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
+                items(foods, key = { "selected-${it.id}" }) { food ->
+                    val amount = grams[food.id].orEmpty()
+                    val calories = food.caloriesPer100g * (amount.toDoubleOrNull() ?: 0.0) / 100.0
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(food.name, style = MaterialTheme.typography.titleMedium)
+                            Text("${format(calories)} kcal", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text("${format(amount.toDoubleOrNull() ?: 0.0)} g")
+                        TextButton(onClick = { onRemove(food.id) }) { Text("Delete") }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("🍽  $mealLabel", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Button(
+                    onClick = onSave,
+                    enabled = foods.isNotEmpty() && !saving,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B978)),
+                ) { Text(if (saving) "Saving…" else "Done") }
+            }
+        }
     }
 }
 
@@ -493,7 +618,6 @@ private fun CompactFoodCard(
     selected: Boolean,
     grams: String?,
     onAdd: () -> Unit,
-    onGrams: (String) -> Unit,
     onRemove: () -> Unit,
     onClick: () -> Unit,
 ) {
@@ -521,16 +645,7 @@ private fun CompactFoodCard(
                     TextButton(onClick = onRemove) { Text("✕") }
                 }
             }
-            if (selected) {
-                OutlinedTextField(
-                    value = grams.orEmpty(),
-                    onValueChange = onGrams,
-                    label = { Text("Grams") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                )
-            }
+            if (selected) Text("${grams.orEmpty()} g selected", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
