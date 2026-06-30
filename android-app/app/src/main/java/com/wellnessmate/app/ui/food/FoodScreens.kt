@@ -235,10 +235,8 @@ fun FoodSelectionScreen(
         }
         localError = null
         viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, null) {
-            selectedGrams.clear()
-            selectedCatalog.clear()
-            showSelectedFoods = false
             onTrackerChanged()
+            onBack()
         }
     }
 
@@ -251,7 +249,7 @@ fun FoodSelectionScreen(
         ) {
             TextButton(onClick = onBack) { Text("Back") }
             Text("${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = onBack) { Text("Done") }
+            TextButton(onClick = ::saveSelectedFoods) { Text("Done") }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
