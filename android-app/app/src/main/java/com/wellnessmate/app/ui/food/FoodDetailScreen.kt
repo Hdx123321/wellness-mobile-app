@@ -142,7 +142,10 @@ private fun FoodDetailContent(
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(18.dp)) {
-                Text(detail.name, style = MaterialTheme.typography.headlineSmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(foodEmoji(detail.categoryId), style = MaterialTheme.typography.headlineMedium)
+                    Text(detail.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp))
+                }
                 Text(
                     "${format(detail.caloriesPer100g * factor)} kcal",
                     style = MaterialTheme.typography.headlineLarge,
@@ -303,6 +306,17 @@ private fun NutrientRow(label: String, grams: Double) {
 
 private fun format(value: Double): String =
     if (value % 1.0 == 0.0) value.toLong().toString() else "%.1f".format(value)
+
+private fun foodEmoji(categoryId: Long?): String = when (categoryId) {
+    1L -> "🍚"
+    2L -> "🍗"
+    3L -> "🥬"
+    4L -> "🍎"
+    5L -> "🥛"
+    6L -> "🥜"
+    7L -> "🧂"
+    else -> "🍽"
+}
 
 private fun isGramServing(size: ServingSizeResponse): Boolean =
     size.label.matches(Regex("\\d+(\\.\\d+)?g", RegexOption.IGNORE_CASE)) ||

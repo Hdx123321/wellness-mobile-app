@@ -122,26 +122,36 @@ fun FoodTrackerScreen(
             val mealEntries = selectedEntries.filter { it.mealType == meal.name }
             item(key = "meal-${meal.name}") {
                 Card(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column {
-                            Text(meal.label, style = MaterialTheme.typography.titleLarge)
-                            Text("${format(totalEntries(mealEntries).calories)} kcal")
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(meal.label, style = MaterialTheme.typography.titleLarge)
+                                Text("${format(totalEntries(mealEntries).calories)} kcal")
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Button(onClick = { onAddFood(selectedDate, meal.name) }) { Text("Add food") }
+                                if (selectedDate == LocalDate.now()) {
+                                    TextButton(onClick = { onTakePhoto(selectedDate, meal.name) }) { Text("Take photo") }
+                                }
+                            }
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Button(onClick = { onAddFood(selectedDate, meal.name) }) { Text("Add food") }
-                            if (selectedDate == LocalDate.now()) {
-                                TextButton(onClick = { onTakePhoto(selectedDate, meal.name) }) { Text("Take photo") }
+                        mealEntries.forEach { entry ->
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text(entry.items.joinToString("、") { it.name }, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                                    TextButton(onClick = { deleteId = entry.id }) { Text("Delete") }
+                                }
+                                NutrientSummary(entry.totals)
+                                if (entry.source == "AI") Text("AI estimate · confirmed by user", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
                 }
-            }
-            items(mealEntries, key = { "entry-${it.id}" }) { entry ->
-                FoodEntryCard(entry, editable = true) { deleteId = entry.id }
             }
         }
 
@@ -233,6 +243,10 @@ fun FoodSelectionScreen(
     LaunchedEffect(selectedDateText) { viewModel.loadDate(selectedDate) }
 
     fun saveSelectedFoods() {
+        if (selectedGrams.isEmpty()) {
+            onBack()
+            return
+        }
         val requests = selectedGrams.mapNotNull { (id, grams) ->
             grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
                 ?.let { CatalogFoodItemRequest(id, it) }
@@ -257,7 +271,6 @@ fun FoodSelectionScreen(
         ) {
             TextButton(onClick = onBack) { Text("Back") }
             Text("${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = ::saveSelectedFoods) { Text("Done") }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -657,7 +670,8 @@ private fun CompactFoodCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Text(foodEmoji(food.categoryId), style = MaterialTheme.typography.headlineSmall)
+                Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
                     Text(food.name, style = MaterialTheme.typography.titleSmall)
                     Text(
                         "${format(food.caloriesPer100g)} kcal/100g",
@@ -798,6 +812,17 @@ private fun previewNutrients(
 )
 
 private fun format(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else "%.1f".format(value)
+
+private fun foodEmoji(categoryId: Long?): String = when (categoryId) {
+    1L -> "🍚"
+    2L -> "🍗"
+    3L -> "🥬"
+    4L -> "🍎"
+    5L -> "🥛"
+    6L -> "🥜"
+    7L -> "🧂"
+    else -> "🍽"
+}
 
 private fun foodDate(entry: FoodEntryResponse): LocalDate = runCatching {
     Instant.parse(entry.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate()
