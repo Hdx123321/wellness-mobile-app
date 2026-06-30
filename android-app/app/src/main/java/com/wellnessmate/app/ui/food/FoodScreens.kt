@@ -198,6 +198,7 @@ fun FoodSelectionScreen(
     viewModel: FoodViewModel,
     initialDate: LocalDate,
     initialMealType: String,
+    onFoodDetail: (Long) -> Unit,
     onBack: () -> Unit,
     onTrackerChanged: () -> Unit,
 ) {
@@ -218,92 +219,153 @@ fun FoodSelectionScreen(
 
     LaunchedEffect(selectedDateText) { viewModel.loadDate(selectedDate) }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onBack) { Text("Back") }
-                Text("${selectedDate.monthValue}/${selectedDate.dayOfMonth} ${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
-                TextButton(onClick = onBack) { Text("Done") }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                TextButton(onClick = { selectedDateText = selectedDate.minusDays(1).toString() }) { Text("Previous") }
-                TextButton(onClick = { showDatePicker = true }) { Text("Choose date") }
-                TextButton(
-                    onClick = { selectedDateText = selectedDate.plusDays(1).toString() },
-                    enabled = selectedDate < LocalDate.now(),
-                ) { Text("Next") }
-            }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(FoodMeal.entries) { meal ->
-                    if (meal == selectedMeal) Button(onClick = {}) { Text(meal.label) }
-                    else TextButton(onClick = { selectedMealName = meal.name }) { Text(meal.label) }
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Search food") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(onClick = { viewModel.search(query) }, modifier = Modifier.padding(start = 8.dp)) {
-                    Text("Search")
-                }
-            }
-            if (selectedFoods.isNotEmpty()) {
-                Text("Selected foods", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 12.dp))
-                NutrientSummary(previewNutrients(selectedFoods, selectedGrams))
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text("Meal notes (optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                localError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                Button(
-                    onClick = {
-                        val requests = selectedGrams.mapNotNull { (id, grams) ->
-                            grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
-                                ?.let { CatalogFoodItemRequest(id, it) }
-                        }
-                        if (requests.size != selectedGrams.size) {
-                            localError = "Enter grams from 1 to 5000 for every selected food."
-                        } else {
-                            localError = null
-                            viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, notes.ifBlank { null }) {
-                                selectedGrams.clear()
-                                selectedCatalog.clear()
-                                notes = ""
-                                onTrackerChanged()
-                            }
-                        }
-                    },
-                    enabled = !state.saving,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                ) { Text(if (state.saving) "Saving…" else "Add to ${selectedMeal.label}") }
-            }
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Text("Common foods", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        // 顶栏：返回 + 日期 + 餐次
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = onBack) { Text("Back") }
+            Text("${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = onBack) { Text("Done") }
         }
-        items(state.catalog, key = { "catalog-${it.id}" }) { food ->
-            CatalogFoodCard(
-                food = food,
-                grams = selectedGrams[food.id],
-                onAdd = {
-                    selectedCatalog[food.id] = food
-                    selectedGrams[food.id] = "100"
-                },
-                onGrams = { selectedGrams[food.id] = it },
-                onRemove = {
-                    selectedGrams.remove(food.id)
-                    selectedCatalog.remove(food.id)
-                },
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = { showDatePicker = true }) {
+                Text(
+                    "📅 ${selectedDate.monthValue}/${selectedDate.dayOfMonth}",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+        }
+        // 餐次选择
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(vertical = 4.dp),
+        ) {
+            items(FoodMeal.entries) { meal ->
+                if (meal == selectedMeal) Button(onClick = {}) { Text(meal.label) }
+                else TextButton(onClick = { selectedMealName = meal.name }) { Text(meal.label) }
+            }
+        }
+
+        // 搜索栏
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Search food") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
             )
+            Button(onClick = { viewModel.search(query) }, modifier = Modifier.padding(start = 8.dp)) {
+                Text("Search")
+            }
+        }
+
+        // 已选食物 + 保存
+        if (selectedFoods.isNotEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("Selected foods", style = MaterialTheme.typography.titleMedium)
+                    NutrientSummary(previewNutrients(selectedFoods, selectedGrams))
+                    OutlinedTextField(
+                        value = notes,
+                        onValueChange = { notes = it },
+                        label = { Text("Meal notes (optional)") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    )
+                    localError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    Button(
+                        onClick = {
+                            val requests = selectedGrams.mapNotNull { (id, grams) ->
+                                grams.toDoubleOrNull()?.takeIf { it in 1.0..5000.0 }
+                                    ?.let { CatalogFoodItemRequest(id, it) }
+                            }
+                            if (requests.size != selectedGrams.size) {
+                                localError = "Enter grams from 1 to 5000 for every selected food."
+                            } else {
+                                localError = null
+                                viewModel.saveCatalog(selectedDate, selectedMeal.name, requests, notes.ifBlank { null }) {
+                                    selectedGrams.clear()
+                                    selectedCatalog.clear()
+                                    notes = ""
+                                    onTrackerChanged()
+                                }
+                            }
+                        },
+                        enabled = !state.saving,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(if (state.saving) "Saving…" else "Add to ${selectedMeal.label}") }
+                }
+            }
+        }
+
+        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 4.dp)) }
+
+        // 主体：分类侧边栏 + 食物列表
+        Row(modifier = Modifier.weight(1f)) {
+            // 左侧分类
+            Column(modifier = Modifier.weight(0.35f).padding(end = 4.dp)) {
+                Text(
+                    "Categories",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+                // "All" 选项
+                TextButton(
+                    onClick = { viewModel.selectCategory(null) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "All",
+                        style = if (state.selectedCategoryId == null) MaterialTheme.typography.titleSmall
+                        else MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                LazyColumn {
+                    items(state.categories, key = { "cat-${it.id}" }) { cat ->
+                        TextButton(
+                            onClick = { viewModel.selectCategory(cat.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                cat.nameCn,
+                                style = if (state.selectedCategoryId == cat.id) MaterialTheme.typography.titleSmall
+                                else MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 右侧食物列表
+            LazyColumn(modifier = Modifier.weight(0.65f).padding(start = 4.dp)) {
+                if (state.loading) {
+                    item { CircularProgressIndicator(modifier = Modifier.padding(24.dp)) }
+                }
+                items(state.catalog, key = { "catalog-${it.id}" }) { food ->
+                    CompactFoodCard(
+                        food = food,
+                        selected = selectedCatalog.containsKey(food.id),
+                        grams = selectedGrams[food.id],
+                        onAdd = {
+                            selectedCatalog[food.id] = food
+                            selectedGrams[food.id] = "100"
+                        },
+                        onGrams = { selectedGrams[food.id] = it },
+                        onRemove = {
+                            selectedGrams.remove(food.id)
+                            selectedCatalog.remove(food.id)
+                        },
+                        onClick = { onFoodDetail(food.id) },
+                    )
+                }
+            }
         }
     }
 
@@ -426,35 +488,47 @@ private fun CameraPreview(busy: Boolean, onPhoto: (ByteArray) -> Unit, onCancel:
 }
 
 @Composable
-private fun CatalogFoodCard(
+private fun CompactFoodCard(
     food: FoodCatalogItemResponse,
+    selected: Boolean,
     grams: String?,
     onAdd: () -> Unit,
     onGrams: (String) -> Unit,
     onRemove: () -> Unit,
+    onClick: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        onClick = onClick,
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(food.name, style = MaterialTheme.typography.titleMedium)
+                    Text(food.name, style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Per 100 g: ${format(food.caloriesPer100g)} kcal · P ${format(food.proteinPer100g)} · " +
-                            "C ${format(food.carbohydratePer100g)} · F ${format(food.fatPer100g)} · Fiber ${format(food.fiberPer100g)}",
+                        "${format(food.caloriesPer100g)} kcal/100g",
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (grams == null) TextButton(onClick = onAdd) { Text("Add") }
-                else TextButton(onClick = onRemove) { Text("Remove") }
+                if (!selected) {
+                    TextButton(onClick = onAdd) { Text("+") }
+                } else {
+                    TextButton(onClick = onRemove) { Text("✕") }
+                }
             }
-            grams?.let {
+            if (selected) {
                 OutlinedTextField(
-                    value = it,
+                    value = grams.orEmpty(),
                     onValueChange = onGrams,
                     label = { Text("Grams") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
             }
         }

@@ -61,8 +61,15 @@ interface WellnessApi {
     @GET("api/food/catalog")
     suspend fun foodCatalog(
         @Query("query") query: String,
-        @Query("limit") limit: Int = 30,
+        @Query("categoryId") categoryId: Long? = null,
+        @Query("limit") limit: Int = 50,
     ): List<FoodCatalogItemResponse>
+
+    @GET("api/food/categories")
+    suspend fun foodCategories(): List<FoodCategoryResponse>
+
+    @GET("api/food/catalog/{id}")
+    suspend fun foodDetail(@Path("id") id: Long): FoodDetailResponse
 
     @GET("api/food/entries")
     suspend fun foodEntries(

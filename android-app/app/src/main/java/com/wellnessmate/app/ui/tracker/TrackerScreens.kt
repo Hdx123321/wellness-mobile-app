@@ -62,6 +62,7 @@ import com.wellnessmate.app.ui.AiAdvisorViewModel
 import com.wellnessmate.app.ui.advisor.AiAdvisorScreen
 import com.wellnessmate.app.ui.chat.CoachChatScreen
 import com.wellnessmate.app.ui.food.FoodCameraScreen
+import com.wellnessmate.app.ui.food.FoodDetailScreen
 import com.wellnessmate.app.ui.food.FoodTrackerScreen
 import com.wellnessmate.app.ui.food.FoodSelectionScreen
 import com.wellnessmate.app.ui.health.HealthProfileScreen
@@ -87,6 +88,7 @@ private const val FORM = "form/{type}/{id}"
 private const val FOOD = "food"
 private const val FOOD_SELECT = "food-select/{date}/{meal}"
 private const val FOOD_CAMERA = "food-camera/{date}/{meal}"
+private const val FOOD_DETAIL = "food-detail/{foodId}"
 
 /** Main post-onboarding navigation for trackers and coach chat. @author TODO(team member) */
 @Composable
@@ -239,11 +241,28 @@ fun MainTrackerNav(
                     viewModel = foodViewModel,
                     initialDate = LocalDate.parse(entry.arguments?.getString("date")),
                     initialMealType = entry.arguments?.getString("meal") ?: "SNACK",
+                    onFoodDetail = { foodId -> navController.navigate("food-detail/$foodId") },
                     onBack = {
                         foodViewModel.loadDate(selectedDate)
                         navController.popBackStack()
                     },
                     onTrackerChanged = { viewModel.loadDate(selectedDate) },
+                )
+            }
+            composable(
+                route = FOOD_DETAIL,
+                arguments = listOf(navArgument("foodId") { type = NavType.LongType }),
+            ) { entry ->
+                val foodId = entry.arguments?.getLong("foodId") ?: return@composable
+                FoodDetailScreen(
+                    foodId = foodId,
+                    viewModel = foodViewModel,
+                    onAdd = { grams ->
+                        // 将食物详情中的选择带回食物选择页，直接加入已选列表
+                        foodViewModel.clearDetail()
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(

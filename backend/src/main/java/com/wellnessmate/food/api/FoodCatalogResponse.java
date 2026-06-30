@@ -10,11 +10,13 @@ public record FoodCatalogResponse(
     BigDecimal proteinPer100g,
     BigDecimal carbohydratePer100g,
     BigDecimal fatPer100g,
-    BigDecimal fiberPer100g
+    BigDecimal fiberPer100g,
+    Long categoryId,
+    String imageUrl
 ) {
   public static FoodCatalogResponse from(FoodCatalogItem food) {
     return new FoodCatalogResponse(food.getId(), food.getName(), food.getCaloriesPer100g(),
         food.getProteinPer100g(), food.getCarbohydratePer100g(), food.getFatPer100g(),
-        food.getFiberPer100g());
+        food.getFiberPer100g(), food.getCategoryId(), food.getImageUrl());
   }
 }

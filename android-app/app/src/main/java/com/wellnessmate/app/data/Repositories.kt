@@ -99,7 +99,9 @@ class NetworkTrackerRepository(private val api: WellnessApi) : TrackerRepository
 }
 
 interface FoodRepository {
-    suspend fun catalog(query: String): Result<List<FoodCatalogItemResponse>>
+    suspend fun catalog(query: String, categoryId: Long? = null): Result<List<FoodCatalogItemResponse>>
+    suspend fun categories(): Result<List<FoodCategoryResponse>>
+    suspend fun foodDetail(id: Long): Result<FoodDetailResponse>
     suspend fun entries(from: String, to: String): Result<List<FoodEntryResponse>>
     suspend fun create(request: FoodEntryRequest): Result<FoodEntryResponse>
     suspend fun createAnalyzed(request: AnalyzedFoodEntryRequest): Result<FoodEntryResponse>
@@ -108,7 +110,13 @@ interface FoodRepository {
 }
 
 class NetworkFoodRepository(private val api: WellnessApi) : FoodRepository {
-    override suspend fun catalog(query: String) = apiResult { api.foodCatalog(query.trim()) }
+    override suspend fun catalog(query: String, categoryId: Long?) =
+        apiResult { api.foodCatalog(query.trim(), categoryId) }
+
+    override suspend fun categories() = apiResult { api.foodCategories() }
+
+    override suspend fun foodDetail(id: Long) = apiResult { api.foodDetail(id) }
+
     override suspend fun entries(from: String, to: String) = apiResult { api.foodEntries(from, to) }
     override suspend fun create(request: FoodEntryRequest) = apiResult { api.createFoodEntry(request) }
     override suspend fun createAnalyzed(request: AnalyzedFoodEntryRequest) = apiResult {
@@ -156,7 +164,10 @@ private suspend fun <T> apiResult(block: suspend () -> T): Result<T> {
         val message = when (error) {
             is HttpException -> when (error.code()) {
                 400 -> "Please check the entered values."
-                401 -> "Your session has expired. Please sign in again."
+                401 -> {
+                    SessionManager.expireSession()  // ← 触发全局登出，跳转登录页
+                    "Your session has expired. Please sign in again."
+                }
                 409 -> "This account information is already in use."
                 422 -> "No food could be recognized. Try a clearer photo."
                 502 -> "Food photo analysis is temporarily unavailable."

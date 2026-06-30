@@ -37,6 +37,12 @@ public class FoodCatalogItem {
   @Column(name = "fiber_per_100g", nullable = false, precision = 8, scale = 2)
   private BigDecimal fiberPer100g;
 
+  @Column(name = "category_id")
+  private Long categoryId;
+
+  @Column(name = "image_url", length = 500)
+  private String imageUrl;
+
   protected FoodCatalogItem() {
   }
 
@@ -47,4 +53,6 @@ public class FoodCatalogItem {
   public BigDecimal getCarbohydratePer100g() { return carbohydratePer100g; }
   public BigDecimal getFatPer100g() { return fatPer100g; }
   public BigDecimal getFiberPer100g() { return fiberPer100g; }
+  public Long getCategoryId() { return categoryId; }
+  public String getImageUrl() { return imageUrl; }
 }
