@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockPart;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -101,6 +103,58 @@ class FoodIntegrationTest {
         .andExpect(status().isNoContent());
     mockMvc.perform(get("/api/tracker-entries/{id}", entry.path("trackerEntryId").asLong())
             .header("Authorization", bearer(token)))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void confirmsAnalyzedPhotoMealAndProtectsThumbnail() throws Exception {
+    String ownerToken = register("foodphotoowner");
+    String otherToken = register("foodphotoother");
+    Map<String, Object> request = Map.of(
+        "recordedAt", Instant.now().minusSeconds(30).toString(),
+        "mealType", "BREAKFAST",
+        "items", List.of(Map.of(
+            "name", "Edited oats", "grams", 250, "calories", 360,
+            "proteinGrams", 14, "carbohydrateGrams", 52,
+            "fatGrams", 11, "fiberGrams", 8)),
+        "notes", "Confirmed photo estimate");
+    MockPart entry = new MockPart("entry", objectMapper.writeValueAsBytes(request));
+    entry.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+    MockMultipartFile thumbnail = new MockMultipartFile(
+        "thumbnail", "meal.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[] {9, 8, 7, 6});
+
+    String response = mockMvc.perform(multipart("/api/food/entries/analyzed/photo")
+            .part(entry)
+            .file(thumbnail)
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.source").value("AI"))
+        .andExpect(jsonPath("$.photoThumbnailAvailable").value(true))
+        .andReturn().getResponse().getContentAsString();
+    long entryId = objectMapper.readTree(response).path("id").asLong();
+
+    mockMvc.perform(get("/api/food/entries/{id}/thumbnail", entryId)
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+        .andExpect(content().bytes(new byte[] {9, 8, 7, 6}));
+
+    mockMvc.perform(get("/api/food/entries/{id}/thumbnail", entryId)
+            .header("Authorization", bearer(otherToken)))
+        .andExpect(status().isNotFound());
+
+    String from = Instant.now().minus(1, ChronoUnit.DAYS).toString();
+    String to = Instant.now().plus(1, ChronoUnit.DAYS).toString();
+    mockMvc.perform(get("/api/food/entries").param("from", from).param("to", to)
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].photoThumbnailAvailable").value(true));
+
+    mockMvc.perform(delete("/api/food/entries/{id}", entryId)
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isNoContent());
+    mockMvc.perform(get("/api/food/entries/{id}/thumbnail", entryId)
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isNotFound());
   }
 

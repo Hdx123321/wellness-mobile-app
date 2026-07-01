@@ -62,8 +62,9 @@ import com.wellnessmate.app.ui.AiAdvisorViewModel
 import com.wellnessmate.app.ui.advisor.AiAdvisorScreen
 import com.wellnessmate.app.ui.chat.CoachChatScreen
 import com.wellnessmate.app.ui.food.FoodCameraScreen
-import com.wellnessmate.app.ui.food.FoodTrackerScreen
+import com.wellnessmate.app.ui.food.FoodPhotoReviewScreen
 import com.wellnessmate.app.ui.food.FoodSelectionScreen
+import com.wellnessmate.app.ui.food.FoodTrackerScreen
 import com.wellnessmate.app.ui.health.HealthProfileScreen
 import com.wellnessmate.app.ui.health.HealthSummaryCard
 import com.wellnessmate.app.ui.health.HeightPickerScreen
@@ -87,6 +88,7 @@ private const val FORM = "form/{type}/{id}"
 private const val FOOD = "food"
 private const val FOOD_SELECT = "food-select/{date}/{meal}"
 private const val FOOD_CAMERA = "food-camera/{date}/{meal}"
+private const val FOOD_REVIEW = "food-review"
 
 /** Main post-onboarding navigation for trackers and coach chat. @author TODO(team member) */
 @Composable
@@ -224,6 +226,7 @@ fun MainTrackerNav(
                     healthProfileViewModel = healthProfileViewModel,
                     onTakePhoto = { date, meal -> navController.navigate("food-camera/$date/$meal") },
                     onAddFood = { date, meal -> navController.navigate("food-select/$date/$meal") },
+                    onReviewPhoto = { navController.navigate(FOOD_REVIEW) },
                     onBack = { navController.popBackStack() },
                     onTrackerChanged = { viewModel.loadDate(selectedDate) },
                 )
@@ -257,8 +260,20 @@ fun MainTrackerNav(
                     viewModel = foodViewModel,
                     date = LocalDate.parse(entry.arguments?.getString("date")),
                     mealType = entry.arguments?.getString("meal") ?: "SNACK",
-                    onComplete = { navController.popBackStack() },
+                    onComplete = {
+                        navController.navigate(FOOD_REVIEW) {
+                            popUpTo(FOOD_CAMERA) { inclusive = true }
+                        }
+                    },
                     onCancel = { navController.popBackStack() },
+                )
+            }
+            composable(FOOD_REVIEW) {
+                FoodPhotoReviewScreen(
+                    viewModel = foodViewModel,
+                    onSaved = { navController.popBackStack(FOOD, inclusive = false) },
+                    onDiscard = { navController.popBackStack(FOOD, inclusive = false) },
+                    onTrackerChanged = { viewModel.loadDate(selectedDate) },
                 )
             }
             composable(

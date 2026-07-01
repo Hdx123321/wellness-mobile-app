@@ -1,10 +1,13 @@
 package com.wellnessmate.app.ui.food
 
 import android.Manifest
+import android.graphics.Bitmap
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -14,6 +17,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -81,11 +86,26 @@ fun FoodTrackerScreen(
     healthProfileViewModel: HealthProfileViewModel,
     onTakePhoto: (LocalDate, String) -> Unit,
     onAddFood: (LocalDate, String) -> Unit,
+    onReviewPhoto: () -> Unit,
     onBack: () -> Unit,
     onTrackerChanged: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     var deleteId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingPhotoDate by remember { mutableStateOf<LocalDate?>(null) }
+    var pendingPhotoMeal by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        val date = pendingPhotoDate
+        val meal = pendingPhotoMeal
+        if (uri != null && date != null && meal != null) {
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (bytes != null) {
+                viewModel.analyze(compressForAnalysis(bytes), date, meal) {}
+                onReviewPhoto()
+            }
+        }
+    }
     val selectedEntries = state.entries.filter { foodDate(it) == selectedDate }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -130,13 +150,21 @@ fun FoodTrackerScreen(
                             Button(onClick = { onAddFood(selectedDate, meal.name) }) { Text("Add food") }
                             if (selectedDate == LocalDate.now()) {
                                 TextButton(onClick = { onTakePhoto(selectedDate, meal.name) }) { Text("Take photo") }
+                                TextButton(onClick = {
+                                    pendingPhotoDate = selectedDate
+                                    pendingPhotoMeal = meal.name
+                                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                }) { Text("Choose photo") }
                             }
                         }
                     }
                 }
             }
             items(mealEntries, key = { "entry-${it.id}" }) { entry ->
-                FoodEntryCard(entry, editable = true) { deleteId = entry.id }
+                if (entry.photoThumbnailAvailable) {
+                    LaunchedEffect(entry.id) { viewModel.loadThumbnail(entry.id) }
+                }
+                FoodEntryCard(entry, state.thumbnails[entry.id], editable = true) { deleteId = entry.id }
             }
         }
 
@@ -353,7 +381,10 @@ fun FoodCameraScreen(
         } else {
             CameraPreview(
                 busy = state.analyzing,
-                onPhoto = { viewModel.analyze(it, date, mealType, onComplete) },
+                onPhoto = {
+                    viewModel.analyze(it, date, mealType) {}
+                    onComplete()
+                },
                 onCancel = onCancel,
             )
         }
@@ -407,7 +438,7 @@ private fun CameraPreview(busy: Boolean, onPhoto: (ByteArray) -> Unit, onCancel:
                     override fun onImageSaved(result: ImageCapture.OutputFileResults) {
                         val bytes = file.readBytes()
                         file.delete()
-                        Handler(Looper.getMainLooper()).post { onPhoto(bytes) }
+                        Handler(Looper.getMainLooper()).post { onPhoto(compressForAnalysis(bytes)) }
                     }
 
                     override fun onError(exception: ImageCaptureException) {
@@ -423,6 +454,170 @@ private fun CameraPreview(busy: Boolean, onPhoto: (ByteArray) -> Unit, onCancel:
         }
         TextButton(onClick = onCancel) { Text("Cancel") }
     }
+}
+
+@Composable
+fun FoodPhotoReviewScreen(
+    viewModel: FoodViewModel,
+    onSaved: () -> Unit,
+    onDiscard: () -> Unit,
+    onTrackerChanged: () -> Unit,
+) {
+    val state by viewModel.state.collectAsState()
+    val analysis = state.analysis
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Review photo estimate", style = MaterialTheme.typography.headlineSmall)
+                TextButton(onClick = {
+                    viewModel.discardAnalysis()
+                    onDiscard()
+                }) { Text("Discard") }
+            }
+            state.analysisThumbnail?.let { bytes ->
+                bitmap(bytes)?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "Meal photo thumbnail",
+                        modifier = Modifier.fillMaxWidth().height(180.dp).padding(vertical = 8.dp),
+                    )
+                }
+            }
+            if (state.analyzing) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                Text("Uploading photo and analyzing nutrition...", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "This can take a few seconds. Keep this screen open.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            state.error?.let {
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = viewModel::clearError) { Text("Dismiss") }
+                            val bytes = state.analysisThumbnail
+                            val date = state.analysisDate
+                            val meal = state.analysisMealType
+                            if (bytes != null && date != null && meal != null) {
+                                TextButton(onClick = {
+                                    viewModel.analyze(bytes, date, meal) {}
+                                }) { Text("Retry") }
+                            }
+                        }
+                    }
+                }
+            }
+            if (analysis == null && !state.analyzing && state.error == null) {
+                Text("No photo estimate is ready. Choose or capture a meal photo to start analysis.")
+            }
+            analysis?.let { ready ->
+                Text(ready.summary, modifier = Modifier.padding(vertical = 8.dp))
+                Text(ready.disclaimer, style = MaterialTheme.typography.bodySmall)
+                if (ready.items.any { it.confidence < 0.5 }) {
+                    Text(
+                        "Some items have low confidence. Review and edit before saving.",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+        }
+        if (analysis != null) {
+            items(analysis.items.indices.toList(), key = { "analysis-$it" }) { index ->
+                val item = analysis.items[index]
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        EditableAnalysisField("Name", item.name) { value ->
+                            viewModel.updateAnalysisItem(index, value, item.estimatedGrams.toString(), item.calories.toString(),
+                                item.proteinGrams.toString(), item.carbohydrateGrams.toString(), item.fatGrams.toString(), item.fiberGrams.toString())
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            EditableAnalysisNumber("Grams", item.estimatedGrams, Modifier.weight(1f)) { value ->
+                                viewModel.updateAnalysisItem(index, item.name, value, item.calories.toString(),
+                                    item.proteinGrams.toString(), item.carbohydrateGrams.toString(), item.fatGrams.toString(), item.fiberGrams.toString())
+                            }
+                            EditableAnalysisNumber("Calories", item.calories, Modifier.weight(1f)) { value ->
+                                viewModel.updateAnalysisItem(index, item.name, item.estimatedGrams.toString(), value,
+                                    item.proteinGrams.toString(), item.carbohydrateGrams.toString(), item.fatGrams.toString(), item.fiberGrams.toString())
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            EditableAnalysisNumber("Protein", item.proteinGrams, Modifier.weight(1f)) { value ->
+                                viewModel.updateAnalysisItem(index, item.name, item.estimatedGrams.toString(), item.calories.toString(),
+                                    value, item.carbohydrateGrams.toString(), item.fatGrams.toString(), item.fiberGrams.toString())
+                            }
+                            EditableAnalysisNumber("Carbs", item.carbohydrateGrams, Modifier.weight(1f)) { value ->
+                                viewModel.updateAnalysisItem(index, item.name, item.estimatedGrams.toString(), item.calories.toString(),
+                                    item.proteinGrams.toString(), value, item.fatGrams.toString(), item.fiberGrams.toString())
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            EditableAnalysisNumber("Fat", item.fatGrams, Modifier.weight(1f)) { value ->
+                                viewModel.updateAnalysisItem(index, item.name, item.estimatedGrams.toString(), item.calories.toString(),
+                                    item.proteinGrams.toString(), item.carbohydrateGrams.toString(), value, item.fiberGrams.toString())
+                            }
+                            EditableAnalysisNumber("Fiber", item.fiberGrams, Modifier.weight(1f)) { value ->
+                                viewModel.updateAnalysisItem(index, item.name, item.estimatedGrams.toString(), item.calories.toString(),
+                                    item.proteinGrams.toString(), item.carbohydrateGrams.toString(), item.fatGrams.toString(), value)
+                            }
+                        }
+                        Text("Confidence ${format(item.confidence * 100)}%", style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { viewModel.removeAnalysisItem(index) }) { Text("Delete item") }
+                    }
+                }
+            }
+            item {
+                Button(
+                    onClick = {
+                        viewModel.confirmAnalysis {
+                            onTrackerChanged()
+                            onSaved()
+                        }
+                    },
+                    enabled = !state.saving && analysis.items.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                ) { Text(if (state.saving) "Saving..." else "Confirm and save") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditableAnalysisField(label: String, value: String, onValue: (String) -> Unit) {
+    var draft by rememberSaveable(value) { mutableStateOf(value) }
+    OutlinedTextField(
+        value = draft,
+        onValueChange = {
+            draft = it
+            onValue(it)
+        },
+        label = { Text(label) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun EditableAnalysisNumber(label: String, value: Double, modifier: Modifier, onValue: (String) -> Unit) {
+    var draft by rememberSaveable(value) { mutableStateOf(format(value)) }
+    OutlinedTextField(
+        value = draft,
+        onValueChange = {
+            draft = it
+            onValue(it)
+        },
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        singleLine = true,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -462,9 +657,18 @@ private fun CatalogFoodCard(
 }
 
 @Composable
-private fun FoodEntryCard(entry: FoodEntryResponse, editable: Boolean, onDelete: () -> Unit) {
+private fun FoodEntryCard(entry: FoodEntryResponse, thumbnail: ByteArray?, editable: Boolean, onDelete: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
+            thumbnail?.let { bytes ->
+                bitmap(bytes)?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "Meal thumbnail",
+                        modifier = Modifier.fillMaxWidth().height(120.dp).padding(bottom = 8.dp),
+                    )
+                }
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(entry.items.joinToString { it.name }, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 if (editable) TextButton(onClick = onDelete) { Text("Delete") }
@@ -583,6 +787,29 @@ private fun previewNutrients(
 )
 
 private fun format(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else "%.1f".format(value)
+
+private fun bitmap(bytes: ByteArray) = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+
+private fun compressForAnalysis(bytes: ByteArray): ByteArray {
+    val source = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return bytes
+    val maxSide = maxOf(source.width, source.height)
+    val scaled = if (maxSide > 1280) {
+        val scale = 1280f / maxSide
+        Bitmap.createScaledBitmap(
+            source,
+            (source.width * scale).toInt().coerceAtLeast(1),
+            (source.height * scale).toInt().coerceAtLeast(1),
+            true,
+        )
+    } else {
+        source
+    }
+    val output = java.io.ByteArrayOutputStream()
+    scaled.compress(Bitmap.CompressFormat.JPEG, 75, output)
+    if (scaled !== source) scaled.recycle()
+    source.recycle()
+    return output.toByteArray()
+}
 
 private fun foodDate(entry: FoodEntryResponse): LocalDate = runCatching {
     Instant.parse(entry.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate()

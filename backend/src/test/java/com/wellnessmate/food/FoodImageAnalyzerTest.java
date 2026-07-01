@@ -46,6 +46,9 @@ class FoodImageAnalyzerTest {
       assertTrue(requestBody.get().contains("data:image/jpeg;base64,AQID"));
       assertTrue(requestBody.get().contains("json_schema"));
       assertTrue(requestBody.get().contains("\"store\":false"));
+      assertTrue(requestBody.get().contains("\"max_output_tokens\":800"));
+      assertTrue(requestBody.get().contains("\"detail\":\"low\""));
+      assertTrue(requestBody.get().contains("\"maxItems\":10"));
     } finally {
       server.stop(0);
     }

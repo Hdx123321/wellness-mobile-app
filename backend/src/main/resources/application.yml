@@ -41,3 +41,6 @@ ai:
   base-url: ${LLM_API_BASE_URL:https://api.openai.com/v1}
   api-key: ${LLM_API_KEY:}
   model: ${LLM_MODEL:gpt-5.5}
+  food-base-url: ${FOOD_LLM_API_BASE_URL:${LLM_API_BASE_URL:https://api.openai.com/v1}}
+  food-api-key: ${FOOD_LLM_API_KEY:${LLM_API_KEY:}}
+  food-model: ${FOOD_LLM_MODEL:${LLM_MODEL:gpt-5.5}}

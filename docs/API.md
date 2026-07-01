@@ -160,6 +160,8 @@ POST   /api/food/entries/analyzed
 GET    /api/food/entries?from=&to=
 DELETE /api/food/entries/{id}
 POST   /api/food/analyze
+POST   /api/food/entries/analyzed/photo
+GET    /api/food/entries/{id}/thumbnail
 ```
 
 Catalog entry request (nutrients are calculated by the backend from the selected catalog row and serving weight):
@@ -182,3 +184,5 @@ Catalog entry request (nutrients are calculated by the backend from the selected
 For `WEIGHT`, creating another entry on the same UTC calendar date updates the existing entry instead of creating a duplicate. Other tracker types may contain multiple entries per day.
 
 `POST /api/food/analyze` accepts multipart field `image` (JPEG, PNG, or WebP; maximum 10 MB). It returns estimated foods, serving weights, calories, protein, carbohydrates, fat, fiber, confidence, and a disclaimer. Analysis is not persisted until the client reviews the result and submits it to `/api/food/entries/analyzed`.
+
+`POST /api/food/entries/analyzed/photo` accepts multipart field `entry` containing the edited analyzed-food JSON and multipart field `thumbnail` containing a compressed meal thumbnail. The original photo is not stored. Confirmed photo meals return `photoThumbnailAvailable: true`, and the owning user can retrieve the thumbnail from `GET /api/food/entries/{id}/thumbnail`.
