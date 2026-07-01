@@ -25,8 +25,8 @@ public class OnboardingQuestionCatalog {
         question("goalDurationWeeks", "INTEGER", false, "How many weeks do you expect the weight goal to take?"),
         choice("dailyRoutine", true, "Which best describes your usual day?", DailyRoutine.values()),
         choice("activityLevel", true, "How active are you currently?", ActivityLevel.values()),
-        choices("exercisePreferences", true, "Which exercise types do you prefer?", ExercisePreference.values()),
-        choices("coreNeeds", true, "What do you mainly want WellnessMate to help with?", CoreNeed.values())
+        choices("exercisePreferences", false, "Which exercise types do you prefer? You may skip this.", ExercisePreference.values()),
+        choices("coreNeeds", false, "What do you mainly want WellnessMate to help with? You may skip this.", CoreNeed.values())
     );
   }
 

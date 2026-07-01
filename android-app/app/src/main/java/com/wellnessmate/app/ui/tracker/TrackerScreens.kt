@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -154,7 +155,10 @@ fun MainTrackerNav(
         },
         bottomBar = {
             if (user.role != "COACH" && (route == HOME || route == ADVISOR || route == COACH)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
                     TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) {
                         Text("Home")
                     }
