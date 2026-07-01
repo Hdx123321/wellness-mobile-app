@@ -14,6 +14,7 @@ data class AiAdvisorUiState(
     val loading: Boolean = true,
     val sending: Boolean = false,
     val messages: List<AiAdvisorMessageResponse> = emptyList(),
+    val streamingContent: String = "",  // partial token text while AI is streaming
     val error: String? = null,
 )
 
@@ -34,21 +35,35 @@ class AiAdvisorViewModel(private val repository: AiAdvisorRepository) : ViewMode
 
     fun send(content: String, onSent: () -> Unit) {
         if (content.isBlank() || _state.value.sending) return
-        _state.value = _state.value.copy(sending = true, error = null)
+        _state.value = _state.value.copy(sending = true, error = null, streamingContent = "")
+
+        val temporaryUser = AiAdvisorMessageResponse(
+            id = -System.currentTimeMillis(), role = "USER", content = content.trim(),
+            createdAt = "",
+        )
+        _state.value = _state.value.copy(
+            messages = _state.value.messages + temporaryUser,
+        )
+
         viewModelScope.launch {
-            repository.send(content).fold(
+            repository.sendStream(content.trim()) { token ->
+                _state.value = _state.value.copy(streamingContent = _state.value.streamingContent + token)
+            }.fold(
                 onSuccess = { response ->
-                    val temporaryUser = AiAdvisorMessageResponse(
-                        id = -System.currentTimeMillis(), role = "USER", content = content.trim(),
-                        createdAt = response.createdAt,
-                    )
                     _state.value = _state.value.copy(
                         sending = false,
-                        messages = _state.value.messages + temporaryUser + response,
+                        streamingContent = "",
+                        messages = _state.value.messages + response,
                     )
                     onSent()
                 },
-                onFailure = { _state.value = _state.value.copy(sending = false, error = it.message) },
+                onFailure = { error ->
+                    _state.value = _state.value.copy(
+                        sending = false,
+                        streamingContent = "",
+                        error = error.message,
+                    )
+                },
             )
         }
     }

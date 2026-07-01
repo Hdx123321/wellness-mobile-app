@@ -29,7 +29,7 @@ android {
         }
         release {
             isMinifyEnabled = false
-            buildConfigField("String", "API_BASE_URL", "\"https://api.example.invalid/\"")
+            buildConfigField("String", "API_BASE_URL", "\"${debugApiBaseUrl.get()}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

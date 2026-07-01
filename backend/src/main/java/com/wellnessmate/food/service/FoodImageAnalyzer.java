@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-/** Server-only OpenAI Responses API client for approximate food-photo analysis. */
+/** OpenAI Chat Completions API client for approximate food-photo analysis. */
 @Service
 public class FoodImageAnalyzer {
   private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -53,24 +53,25 @@ public class FoodImageAnalyzer {
       throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_FOOD_IMAGE", "A valid image is required");
     }
 
+    String imageUrl = "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(image);
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("model", model);
-    payload.put("store", false);
-    payload.put("max_output_tokens", 800);
-    payload.put("input", List.of(Map.of(
+    payload.put("max_tokens", 800);
+    payload.put("messages", List.of(Map.of(
         "role", "user",
         "content", List.of(
-            Map.of("type", "input_text", "text", prompt()),
-            Map.of("type", "input_image", "detail", "low", "image_url",
-                "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(image))))));
-    payload.put("text", Map.of("format", Map.of(
-        "type", "json_schema", "name", "food_analysis", "strict", true,
-        "schema", schema())));
+            Map.of("type", "text", "text", prompt()),
+            Map.of("type", "image_url", "image_url", Map.of("url", imageUrl))))));
+    payload.put("response_format", Map.of(
+        "type", "json_schema",
+        "json_schema", Map.of(
+            "name", "food_analysis", "strict", true,
+            "schema", schema())));
 
     try {
       JsonNode response = RestClient.builder().baseUrl(baseUrl)
           .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-          .build().post().uri("/responses").body(payload).retrieve().body(JsonNode.class);
+          .build().post().uri("/chat/completions").body(payload).retrieve().body(JsonNode.class);
       String output = outputText(response);
       JsonNode parsed = mapper.readTree(output);
       List<FoodAnalysisItemResponse> items = new java.util.ArrayList<>();
@@ -96,14 +97,7 @@ public class FoodImageAnalyzer {
 
   private String outputText(JsonNode response) {
     if (response == null) return "";
-    for (JsonNode output : response.path("output")) {
-      for (JsonNode content : output.path("content")) {
-        if ("output_text".equals(content.path("type").asText())) {
-          return content.path("text").asText();
-        }
-      }
-    }
-    return "";
+    return response.path("choices").path(0).path("message").path("content").asText();
   }
 
   private BigDecimal decimal(JsonNode node, String field) {

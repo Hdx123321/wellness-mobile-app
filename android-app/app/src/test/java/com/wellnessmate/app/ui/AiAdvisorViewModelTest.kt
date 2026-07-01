@@ -30,4 +30,10 @@ private class FakeAiAdvisorRepository : AiAdvisorRepository {
     override suspend fun send(content: String) = Result.success(
         AiAdvisorMessageResponse(1, "ASSISTANT", "Take a short walk.", "2026-06-29T00:00:00Z"),
     )
+    override suspend fun sendStream(content: String, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse> {
+        onToken("Take a short walk.")
+        return Result.success(
+            AiAdvisorMessageResponse(1, "ASSISTANT", "Take a short walk.", "2026-06-29T00:00:00Z"),
+        )
+    }
 }

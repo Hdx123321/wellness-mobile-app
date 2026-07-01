@@ -11,11 +11,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import com.wellnessmate.app.R
 import com.wellnessmate.app.data.OnboardingRequest
 import com.wellnessmate.app.ui.OnboardingViewModel
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 private val sexOptions = listOf("FEMALE", "MALE", "INTERSEX", "PREFER_NOT_TO_SAY")
 private val ethnicityOptions = listOf(
@@ -50,6 +57,7 @@ private val needOptions = listOf(
 
 /** First-login profile form using mostly choice controls. @author TODO(team member) */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun OnboardingScreen(
     viewModel: OnboardingViewModel,
     onCompleted: () -> Unit,
@@ -68,6 +76,7 @@ fun OnboardingScreen(
     var exercisesCsv by rememberSaveable { mutableStateOf("") }
     var needsCsv by rememberSaveable { mutableStateOf("") }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
+    var showBirthDatePicker by rememberSaveable { mutableStateOf(false) }
 
     if (state.loading) {
         CenteredProgress(stringResource(R.string.loading_questions))
@@ -84,7 +93,15 @@ fun OnboardingScreen(
         Text(stringResource(R.string.tell_us_about_you), style = MaterialTheme.typography.headlineMedium)
         Text(stringResource(R.string.onboarding_intro), modifier = Modifier.padding(top = 8.dp, bottom = 16.dp))
 
-        TextInput(dateOfBirth, { dateOfBirth = it }, R.string.date_of_birth, KeyboardType.Ascii)
+        Button(
+            onClick = { showBirthDatePicker = true },
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        ) {
+            val displayDate = dateOfBirth.takeIf(String::isNotBlank)?.let {
+                LocalDate.parse(it).format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+            }
+            Text(displayDate?.let { "Date of birth: $it" } ?: "Select date of birth")
+        }
         TextInput(height, { height = it }, R.string.height_cm, KeyboardType.Decimal)
         TextInput(weight, { weight = it }, R.string.current_weight_kg, KeyboardType.Decimal)
         SingleChoice(stringResource(R.string.sex_at_birth), options(state.questions, "sex", sexOptions), sex) { sex = it }
@@ -93,8 +110,8 @@ fun OnboardingScreen(
         TextInput(durationWeeks, { durationWeeks = it }, R.string.goal_weeks_optional, KeyboardType.Number)
         SingleChoice(stringResource(R.string.daily_routine), options(state.questions, "dailyRoutine", routineOptions), routine) { routine = it }
         SingleChoice(stringResource(R.string.activity_level), options(state.questions, "activityLevel", activityOptions), activity) { activity = it }
-        MultiChoice(stringResource(R.string.exercise_preferences), options(state.questions, "exercisePreferences", exerciseOptions), exercisesCsv) { exercisesCsv = it }
-        MultiChoice(stringResource(R.string.core_needs), options(state.questions, "coreNeeds", needOptions), needsCsv) { needsCsv = it }
+        MultiChoice("${stringResource(R.string.exercise_preferences)} (optional)", options(state.questions, "exercisePreferences", exerciseOptions), exercisesCsv) { exercisesCsv = it }
+        MultiChoice("${stringResource(R.string.core_needs)} (optional)", options(state.questions, "coreNeeds", needOptions), needsCsv) { needsCsv = it }
 
         (localError ?: state.error)?.let {
             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
@@ -105,7 +122,7 @@ fun OnboardingScreen(
                     dateOfBirth, height, weight, sex, ethnicity, targetWeight, durationWeeks,
                     routine, activity, csvSet(exercisesCsv), csvSet(needsCsv),
                 )
-                if (request == null) localError = "Complete all required fields using valid numbers and date YYYY-MM-DD."
+                if (request == null) localError = "Complete all required fields using valid values."
                 else {
                     localError = null
                     viewModel.save(request, onCompleted)
@@ -120,6 +137,31 @@ fun OnboardingScreen(
         TextButton(onClick = onLogout, modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Text(stringResource(R.string.logout))
         }
+    }
+
+    if (showBirthDatePicker) {
+        val initialDate = dateOfBirth.takeIf(String::isNotBlank)?.let(LocalDate::parse)
+            ?: LocalDate.now().minusYears(25)
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli(),
+            selectableDates = object : androidx.compose.material3.SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate() < LocalDate.now()
+                override fun isSelectableYear(year: Int): Boolean = year <= LocalDate.now().year
+            },
+        )
+        DatePickerDialog(
+            onDismissRequest = { showBirthDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let {
+                        dateOfBirth = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toString()
+                    }
+                    showBirthDatePicker = false
+                }) { Text("Select") }
+            },
+            dismissButton = { TextButton(onClick = { showBirthDatePicker = false }) { Text("Cancel") } },
+        ) { DatePicker(state = pickerState) }
     }
 }
 
@@ -197,7 +239,6 @@ private fun buildRequest(
     val targetValue = target.ifBlank { null }?.toDouble()
     val weeksValue = weeks.ifBlank { null }?.toInt()
     require((targetValue == null) == (weeksValue == null))
-    require(exercises.isNotEmpty() && needs.isNotEmpty())
     OnboardingRequest(
         dateOfBirth = dob,
         heightCm = height.toDouble(),

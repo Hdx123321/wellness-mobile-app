@@ -10,7 +10,6 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import java.math.BigDecimal;
@@ -28,7 +27,7 @@ public record OnboardingRequest(
     @Min(1) @Max(260) Integer goalDurationWeeks,
     @NotNull DailyRoutine dailyRoutine,
     @NotNull ActivityLevel activityLevel,
-    @NotEmpty Set<ExercisePreference> exercisePreferences,
-    @NotEmpty Set<CoreNeed> coreNeeds
+    @NotNull Set<ExercisePreference> exercisePreferences,
+    @NotNull Set<CoreNeed> coreNeeds
 ) {
 }

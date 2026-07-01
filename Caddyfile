@@ -1,0 +1,14 @@
+api.hdx-lab.org {
+    encode zstd gzip
+
+    # SSE streaming for AI Advisor — must not buffer or compress
+    @sse path /api/ai-advisor/messages/stream
+    route @sse {
+        header Content-Type text/event-stream
+        reverse_proxy backend:8080 {
+            flush_interval -1
+        }
+    }
+
+    reverse_proxy backend:8080
+}

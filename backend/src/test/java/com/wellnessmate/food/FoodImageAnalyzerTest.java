@@ -17,7 +17,7 @@ class FoodImageAnalyzerTest {
   void sendsImageWithJsonSchemaAndParsesResponse() throws Exception {
     AtomicReference<String> requestBody = new AtomicReference<>();
     HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-    server.createContext("/v1/responses", exchange -> {
+    server.createContext("/v1/chat/completions", exchange -> {
       requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
       String analyzed = """
           {"summary":"Rice and chicken","items":[{"name":"Chicken","estimatedGrams":120,
@@ -25,10 +25,8 @@ class FoodImageAnalyzerTest {
           "fiberGrams":0,"confidence":0.86}]}
           """.replace("\n", "");
       String response = new ObjectMapper().writeValueAsString(java.util.Map.of(
-          "output", java.util.List.of(java.util.Map.of(
-              "type", "message",
-              "content", java.util.List.of(java.util.Map.of(
-                  "type", "output_text", "text", analyzed))))));
+          "choices", java.util.List.of(java.util.Map.of(
+              "message", java.util.Map.of("content", analyzed)))));
       byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
       exchange.getResponseHeaders().add("Content-Type", "application/json");
       exchange.sendResponseHeaders(200, bytes.length);
@@ -45,9 +43,10 @@ class FoodImageAnalyzerTest {
       assertEquals("Chicken", result.items().getFirst().name());
       assertTrue(requestBody.get().contains("data:image/jpeg;base64,AQID"));
       assertTrue(requestBody.get().contains("json_schema"));
-      assertTrue(requestBody.get().contains("\"store\":false"));
-      assertTrue(requestBody.get().contains("\"max_output_tokens\":800"));
-      assertTrue(requestBody.get().contains("\"detail\":\"low\""));
+      assertTrue(requestBody.get().contains("\"max_tokens\":800"));
+      assertTrue(requestBody.get().contains("\"messages\""));
+      assertTrue(requestBody.get().contains("\"image_url\""));
+      assertTrue(requestBody.get().contains("\"response_format\""));
       assertTrue(requestBody.get().contains("\"maxItems\":10"));
     } finally {
       server.stop(0);

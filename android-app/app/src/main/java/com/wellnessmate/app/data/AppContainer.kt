@@ -11,10 +11,12 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 /** Application-scoped network and repository dependencies. @author TODO(team member) */
 class AppContainer(context: Context) {
     private val tokenStore = TokenStore(context.applicationContext)
+    val okHttpClient: OkHttpClient
+    val baseUrl: String = BuildConfig.API_BASE_URL
     private val api: WellnessApi
 
     init {
-        val httpClient = OkHttpClient.Builder()
+        okHttpClient = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder().apply {
                     tokenStore.token()?.let { header("Authorization", "Bearer $it") }
@@ -24,8 +26,8 @@ class AppContainer(context: Context) {
             .build()
         val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
         api = Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
-            .client(httpClient)
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(WellnessApi::class.java)
@@ -37,5 +39,6 @@ class AppContainer(context: Context) {
     val trackerRepository: TrackerRepository = NetworkTrackerRepository(api)
     val foodRepository: FoodRepository = NetworkFoodRepository(api)
     val coachChatRepository: CoachChatRepository = NetworkCoachChatRepository(api)
-    val aiAdvisorRepository: AiAdvisorRepository = NetworkAiAdvisorRepository(api)
+    val aiAdvisorRepository: AiAdvisorRepository =
+        NetworkAiAdvisorRepository(api, okHttpClient, baseUrl, tokenStore)
 }
