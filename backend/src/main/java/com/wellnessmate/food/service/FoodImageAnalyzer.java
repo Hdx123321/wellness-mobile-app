@@ -30,9 +30,9 @@ public class FoodImageAnalyzer {
   private final String model;
 
   public FoodImageAnalyzer(ObjectMapper mapper,
-                           @Value("${ai.base-url:https://api.openai.com/v1}") String baseUrl,
-                           @Value("${ai.api-key:}") String apiKey,
-                           @Value("${ai.model:gpt-5.5}") String model) {
+                           @Value("${ai.food-base-url:${ai.base-url:https://api.openai.com/v1}}") String baseUrl,
+                           @Value("${ai.food-api-key:${ai.api-key:}}") String apiKey,
+                           @Value("${ai.food-model:${ai.model:gpt-5.5}}") String model) {
     this.mapper = mapper;
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
@@ -56,12 +56,12 @@ public class FoodImageAnalyzer {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("model", model);
     payload.put("store", false);
-    payload.put("max_output_tokens", 1200);
+    payload.put("max_output_tokens", 800);
     payload.put("input", List.of(Map.of(
         "role", "user",
         "content", List.of(
             Map.of("type", "input_text", "text", prompt()),
-            Map.of("type", "input_image", "detail", "high", "image_url",
+            Map.of("type", "input_image", "detail", "low", "image_url",
                 "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(image))))));
     payload.put("text", Map.of("format", Map.of(
         "type", "json_schema", "name", "food_analysis", "strict", true,
@@ -112,10 +112,9 @@ public class FoodImageAnalyzer {
 
   private String prompt() {
     return """
-        Identify only visible foods and drinks in this meal photo. Separate major components,
-        estimate edible grams, calories, protein, carbohydrates, fat, and fiber for each component.
-        Use realistic prepared-food values. Confidence is from 0 to 1. Do not provide health advice.
-        If portions are uncertain, make a conservative estimate and lower confidence.
+        Identify visible foods and drinks only. Return concise JSON with major components,
+        edible grams, calories, protein, carbohydrates, fat, fiber, and confidence from 0 to 1.
+        Use conservative portion estimates when uncertain. Do not provide health advice.
         """;
   }
 
@@ -141,7 +140,7 @@ public class FoodImageAnalyzer {
         "additionalProperties", false,
         "properties", Map.of(
             "summary", Map.of("type", "string"),
-            "items", Map.of("type", "array", "minItems", 1, "maxItems", 20, "items", item)),
+            "items", Map.of("type", "array", "minItems", 1, "maxItems", 10, "items", item)),
         "required", List.of("summary", "items"));
   }
 }

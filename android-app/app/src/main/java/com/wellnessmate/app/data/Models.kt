@@ -210,6 +210,7 @@ data class FoodEntryResponse(
     val notes: String?,
     val items: List<FoodEntryItemResponse>,
     val totals: FoodNutrients,
+    val photoThumbnailAvailable: Boolean = false,
 )
 
 data class FoodAnalysisItemResponse(

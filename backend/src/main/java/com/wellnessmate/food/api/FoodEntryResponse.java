@@ -13,12 +13,18 @@ public record FoodEntryResponse(
     String source,
     String notes,
     List<FoodEntryItemResponse> items,
-    FoodNutrients totals
+    FoodNutrients totals,
+    boolean photoThumbnailAvailable
 ) {
   public static FoodEntryResponse from(FoodEntry entry, List<FoodEntryItem> items,
                                        FoodNutrients totals) {
+    return from(entry, items, totals, false);
+  }
+
+  public static FoodEntryResponse from(FoodEntry entry, List<FoodEntryItem> items,
+                                       FoodNutrients totals, boolean photoThumbnailAvailable) {
     return new FoodEntryResponse(entry.getId(), entry.getTrackerEntryId(), entry.getRecordedAt(),
         entry.getMealType().name(), entry.getSource().name(), entry.getNotes(),
-        items.stream().map(FoodEntryItemResponse::from).toList(), totals);
+        items.stream().map(FoodEntryItemResponse::from).toList(), totals, photoThumbnailAvailable);
   }
 }

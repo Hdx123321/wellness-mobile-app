@@ -4,6 +4,8 @@ import retrofit2.HttpException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 /** User-facing API failure with a stable fallback message. @author TODO(team member) */
 class ApiFailure(message: String) : RuntimeException(message)
@@ -124,26 +126,47 @@ interface FoodRepository {
     suspend fun entries(from: String, to: String): Result<List<FoodEntryResponse>>
     suspend fun create(request: FoodEntryRequest): Result<FoodEntryResponse>
     suspend fun createAnalyzed(request: AnalyzedFoodEntryRequest): Result<FoodEntryResponse>
+    suspend fun createAnalyzedPhoto(
+        request: AnalyzedFoodEntryRequest,
+        thumbnail: ByteArray,
+    ): Result<FoodEntryResponse>
     suspend fun analyze(image: ByteArray): Result<FoodAnalysisResponse>
+    suspend fun thumbnail(entryId: Long): Result<ByteArray>
     suspend fun delete(id: Long): Result<Unit>
 }
 
 class NetworkFoodRepository(private val api: WellnessApi) : FoodRepository {
+    private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    private val analyzedFoodAdapter = moshi.adapter(AnalyzedFoodEntryRequest::class.java)
+
     override suspend fun catalog(query: String, categoryId: Long?) =
         apiResult { api.foodCatalog(query.trim(), categoryId) }
 
     override suspend fun categories() = apiResult { api.foodCategories() }
 
     override suspend fun foodDetail(id: Long) = apiResult { api.foodDetail(id) }
-
     override suspend fun entries(from: String, to: String) = apiResult { api.foodEntries(from, to) }
     override suspend fun create(request: FoodEntryRequest) = apiResult { api.createFoodEntry(request) }
     override suspend fun createAnalyzed(request: AnalyzedFoodEntryRequest) = apiResult {
         api.createAnalyzedFoodEntry(request)
     }
+    override suspend fun createAnalyzedPhoto(
+        request: AnalyzedFoodEntryRequest,
+        thumbnail: ByteArray,
+    ) = apiResult {
+        val entry = analyzedFoodAdapter.toJson(request).toRequestBody("application/json".toMediaType())
+        val body = thumbnail.toRequestBody("image/jpeg".toMediaType())
+        api.createAnalyzedFoodPhotoEntry(
+            entry,
+            MultipartBody.Part.createFormData("thumbnail", "meal-thumbnail.jpg", body),
+        )
+    }
     override suspend fun analyze(image: ByteArray) = apiResult {
         val body = image.toRequestBody("image/jpeg".toMediaType())
         api.analyzeFoodPhoto(MultipartBody.Part.createFormData("image", "meal.jpg", body))
+    }
+    override suspend fun thumbnail(entryId: Long) = apiResult {
+        api.foodEntryThumbnail(entryId).bytes()
     }
     override suspend fun delete(id: Long) = apiResult { api.deleteFoodEntry(id); Unit }
 }

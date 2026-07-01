@@ -35,6 +35,8 @@ data class FoodUiState(
     val analysis: FoodAnalysisResponse? = null,
     val analysisDate: LocalDate? = null,
     val analysisMealType: String? = null,
+    val analysisThumbnail: ByteArray? = null,
+    val thumbnails: Map<Long, ByteArray> = emptyMap(),
     val error: String? = null,
 )
 
@@ -150,7 +152,14 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
 
     fun analyze(image: ByteArray, date: LocalDate, mealType: String, onComplete: () -> Unit) {
         if (_state.value.analyzing) return
-        _state.value = _state.value.copy(analyzing = true, analysis = null, error = null)
+        _state.value = _state.value.copy(
+            analyzing = true,
+            analysis = null,
+            analysisDate = date,
+            analysisMealType = mealType,
+            analysisThumbnail = image,
+            error = null,
+        )
         viewModelScope.launch {
             repository.analyze(image).fold(
                 onSuccess = {
@@ -159,6 +168,7 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
                         analysis = it,
                         analysisDate = date,
                         analysisMealType = mealType,
+                        analysisThumbnail = image,
                     )
                 },
                 onFailure = { _state.value = _state.value.copy(analyzing = false, error = it.message) },
@@ -185,17 +195,20 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
         }
         _state.value = _state.value.copy(saving = true, error = null)
         viewModelScope.launch {
-            repository.createAnalyzed(
-                AnalyzedFoodEntryRequest(
-                    recordedAt(date), mealType, items, "Confirmed photo estimate",
-                ),
-            ).fold(
+            val request = AnalyzedFoodEntryRequest(
+                recordedAt(date), mealType, items, "Confirmed photo estimate",
+            )
+            val thumbnail = _state.value.analysisThumbnail
+            val result = if (thumbnail == null) repository.createAnalyzed(request)
+            else repository.createAnalyzedPhoto(request, thumbnail)
+            result.fold(
                 onSuccess = {
                     _state.value = _state.value.copy(
                         saving = false,
                         analysis = null,
                         analysisDate = null,
                         analysisMealType = null,
+                        analysisThumbnail = null,
                     )
                     loadDate(date)
                     onSaved()
@@ -210,6 +223,41 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
             analysis = null,
             analysisDate = null,
             analysisMealType = null,
+            analysisThumbnail = null,
+        )
+    }
+
+    fun updateAnalysisItem(
+        index: Int,
+        name: String,
+        grams: String,
+        calories: String,
+        proteinGrams: String,
+        carbohydrateGrams: String,
+        fatGrams: String,
+        fiberGrams: String,
+    ) {
+        val current = _state.value.analysis ?: return
+        val item = current.items.getOrNull(index) ?: return
+        val updated = item.copy(
+            name = name.trim(),
+            estimatedGrams = grams.toDoubleOrNull() ?: item.estimatedGrams,
+            calories = calories.toDoubleOrNull() ?: item.calories,
+            proteinGrams = proteinGrams.toDoubleOrNull() ?: item.proteinGrams,
+            carbohydrateGrams = carbohydrateGrams.toDoubleOrNull() ?: item.carbohydrateGrams,
+            fatGrams = fatGrams.toDoubleOrNull() ?: item.fatGrams,
+            fiberGrams = fiberGrams.toDoubleOrNull() ?: item.fiberGrams,
+        )
+        _state.value = _state.value.copy(
+            analysis = current.copy(items = current.items.toMutableList().also { it[index] = updated }),
+        )
+    }
+
+    fun removeAnalysisItem(index: Int) {
+        val current = _state.value.analysis ?: return
+        if (index !in current.items.indices) return
+        _state.value = _state.value.copy(
+            analysis = current.copy(items = current.items.filterIndexed { itemIndex, _ -> itemIndex != index }),
         )
     }
 
@@ -224,6 +272,20 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
                     onDeleted()
                 },
                 onFailure = { _state.value = _state.value.copy(error = it.message) },
+            )
+        }
+    }
+
+    fun loadThumbnail(entryId: Long) {
+        if (_state.value.thumbnails.containsKey(entryId)) return
+        viewModelScope.launch {
+            repository.thumbnail(entryId).fold(
+                onSuccess = { bytes ->
+                    _state.value = _state.value.copy(
+                        thumbnails = _state.value.thumbnails + (entryId to bytes),
+                    )
+                },
+                onFailure = { /* Thumbnail is optional; keep the meal card usable. */ },
             )
         }
     }

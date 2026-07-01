@@ -10,6 +10,8 @@ import retrofit2.http.Multipart
 import retrofit2.http.Part
 import retrofit2.http.Query
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.ResponseBody
 
 /** Retrofit contract for the implemented backend core flow. @author TODO(team member) */
 interface WellnessApi {
@@ -83,8 +85,18 @@ interface WellnessApi {
     @POST("api/food/entries/analyzed")
     suspend fun createAnalyzedFoodEntry(@Body request: AnalyzedFoodEntryRequest): FoodEntryResponse
 
+    @Multipart
+    @POST("api/food/entries/analyzed/photo")
+    suspend fun createAnalyzedFoodPhotoEntry(
+        @Part("entry") entry: RequestBody,
+        @Part thumbnail: MultipartBody.Part,
+    ): FoodEntryResponse
+
     @DELETE("api/food/entries/{id}")
     suspend fun deleteFoodEntry(@Path("id") id: Long)
+
+    @GET("api/food/entries/{id}/thumbnail")
+    suspend fun foodEntryThumbnail(@Path("id") id: Long): ResponseBody
 
     @Multipart
     @POST("api/food/analyze")
