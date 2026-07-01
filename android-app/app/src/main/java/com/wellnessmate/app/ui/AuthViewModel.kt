@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.wellnessmate.app.data.AuthRepository
+import com.wellnessmate.app.data.SessionManager
 import com.wellnessmate.app.data.SessionUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,18 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    init {
+        // 全局会话过期监听：任何 API 返回 401 时，自动跳转到登录页
+        viewModelScope.launch {
+            SessionManager.expired.collect { expired ->
+                if (expired) {
+                    SessionManager.reset()
+                    logout()
+                }
+            }
+        }
+    }
 
     fun login(identifier: String, password: String) {
         if (identifier.isBlank() || password.isBlank()) {

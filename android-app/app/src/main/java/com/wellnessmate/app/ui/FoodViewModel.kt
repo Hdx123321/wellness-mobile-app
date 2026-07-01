@@ -8,6 +8,8 @@ import com.wellnessmate.app.data.AnalyzedFoodItemRequest
 import com.wellnessmate.app.data.CatalogFoodItemRequest
 import com.wellnessmate.app.data.FoodAnalysisResponse
 import com.wellnessmate.app.data.FoodCatalogItemResponse
+import com.wellnessmate.app.data.FoodCategoryResponse
+import com.wellnessmate.app.data.FoodDetailResponse
 import com.wellnessmate.app.data.FoodEntryRequest
 import com.wellnessmate.app.data.FoodEntryResponse
 import com.wellnessmate.app.data.FoodRepository
@@ -25,6 +27,10 @@ data class FoodUiState(
     val saving: Boolean = false,
     val analyzing: Boolean = false,
     val catalog: List<FoodCatalogItemResponse> = emptyList(),
+    val categories: List<FoodCategoryResponse> = emptyList(),
+    val selectedCategoryId: Long? = null,
+    val foodDetail: FoodDetailResponse? = null,
+    val detailLoading: Boolean = false,
     val entries: List<FoodEntryResponse> = emptyList(),
     val analysis: FoodAnalysisResponse? = null,
     val analysisDate: LocalDate? = null,
@@ -47,24 +53,56 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
             val catalog = repository.catalog("")
+            val categories = repository.categories()
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
             val from = today.atStartOfDay(zone).toInstant().toString()
             val to = today.plusDays(1).atStartOfDay(zone).toInstant().toString()
             val entries = repository.entries(from, to)
-            if (catalog.isSuccess && entries.isSuccess) {
-                _state.value = _state.value.copy(
-                    loading = false,
-                    catalog = catalog.getOrThrow(),
-                    entries = entries.getOrThrow(),
-                )
-            } else {
-                _state.value = _state.value.copy(
-                    loading = false,
-                    error = catalog.exceptionOrNull()?.message ?: entries.exceptionOrNull()?.message,
-                )
-            }
+            _state.value = _state.value.copy(
+                loading = false,
+                catalog = catalog.getOrNull() ?: _state.value.catalog,
+                categories = categories.getOrNull() ?: _state.value.categories,
+                entries = entries.getOrNull() ?: _state.value.entries,
+                error = catalog.exceptionOrNull()?.message
+                    ?: categories.exceptionOrNull()?.message
+                    ?: entries.exceptionOrNull()?.message,
+            )
         }
+    }
+
+    fun selectCategory(categoryId: Long?) {
+        _state.value = _state.value.copy(selectedCategoryId = categoryId, loading = true, error = null)
+        viewModelScope.launch {
+            repository.catalog("", categoryId).fold(
+                onSuccess = { _state.value = _state.value.copy(loading = false, catalog = it) },
+                onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
+            )
+        }
+    }
+
+    fun search(query: String) {
+        viewModelScope.launch {
+            val catId = _state.value.selectedCategoryId
+            repository.catalog(query, catId).fold(
+                onSuccess = { _state.value = _state.value.copy(catalog = it, error = null) },
+                onFailure = { _state.value = _state.value.copy(error = it.message) },
+            )
+        }
+    }
+
+    fun loadFoodDetail(id: Long) {
+        _state.value = _state.value.copy(detailLoading = true, error = null)
+        viewModelScope.launch {
+            repository.foodDetail(id).fold(
+                onSuccess = { _state.value = _state.value.copy(detailLoading = false, foodDetail = it) },
+                onFailure = { _state.value = _state.value.copy(detailLoading = false, error = it.message) },
+            )
+        }
+    }
+
+    fun clearDetail() {
+        _state.value = _state.value.copy(foodDetail = null)
     }
 
     fun loadMonth(month: YearMonth) {
@@ -87,15 +125,6 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
             repository.entries(from, to).fold(
                 onSuccess = { _state.value = _state.value.copy(loading = false, entries = it) },
                 onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
-            )
-        }
-    }
-
-    fun search(query: String) {
-        viewModelScope.launch {
-            repository.catalog(query).fold(
-                onSuccess = { _state.value = _state.value.copy(catalog = it, error = null) },
-                onFailure = { _state.value = _state.value.copy(error = it.message) },
             )
         }
     }

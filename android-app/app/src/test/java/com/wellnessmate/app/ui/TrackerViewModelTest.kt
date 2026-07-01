@@ -32,6 +32,25 @@ class TrackerViewModelTest {
         assertTrue(saved)
         assertEquals(1, viewModel.state.value.entries.size)
     }
+
+    @Test
+    fun saveAllCreatesEveryWorkoutDraft() = runTest {
+        val repository = FakeTrackerRepository()
+        val viewModel = TrackerViewModel(repository)
+        advanceUntilIdle()
+        var saved = false
+
+        viewModel.saveAll(
+            listOf(
+                TrackerEntryRequest("WORKOUT", "2026-07-01T00:00:00Z", 30.0, "RUNNING", null),
+                TrackerEntryRequest("WORKOUT", "2026-07-01T00:00:00Z", 20.0, "YOGA", null),
+            ),
+        ) { saved = true }
+        advanceUntilIdle()
+
+        assertTrue(saved)
+        assertEquals(2, viewModel.state.value.entries.size)
+    }
 }
 
 private class FakeTrackerRepository : TrackerRepository {

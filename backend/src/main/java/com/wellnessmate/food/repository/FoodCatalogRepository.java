@@ -10,9 +10,11 @@ import org.springframework.data.repository.query.Param;
 public interface FoodCatalogRepository extends JpaRepository<FoodCatalogItem, Long> {
   @Query("""
       select food from FoodCatalogItem food
-      where :query = '' or lower(food.name) like lower(concat('%', :query, '%'))
-        or lower(food.searchTerms) like lower(concat('%', :query, '%'))
+      where (:query = '' or lower(food.name) like lower(concat('%', :query, '%'))
+        or lower(food.searchTerms) like lower(concat('%', :query, '%')))
+      and (:categoryId is null or food.categoryId = :categoryId)
       order by food.name
       """)
-  List<FoodCatalogItem> search(@Param("query") String query, Pageable pageable);
+  List<FoodCatalogItem> search(@Param("query") String query, @Param("categoryId") Long categoryId,
+                               Pageable pageable);
 }

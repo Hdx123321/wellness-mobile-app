@@ -5,9 +5,12 @@ import com.wellnessmate.food.api.AnalyzedFoodEntryRequest;
 import com.wellnessmate.food.api.AnalyzedFoodItemRequest;
 import com.wellnessmate.food.api.CatalogFoodItemRequest;
 import com.wellnessmate.food.api.FoodCatalogResponse;
+import com.wellnessmate.food.api.FoodCategoryResponse;
+import com.wellnessmate.food.api.FoodDetailResponse;
 import com.wellnessmate.food.api.FoodEntryRequest;
 import com.wellnessmate.food.api.FoodEntryResponse;
 import com.wellnessmate.food.api.FoodNutrients;
+import com.wellnessmate.food.api.ServingSizeResponse;
 import com.wellnessmate.food.domain.FoodCatalogItem;
 import com.wellnessmate.food.domain.FoodEntry;
 import com.wellnessmate.food.domain.FoodEntryItem;
@@ -15,9 +18,11 @@ import com.wellnessmate.food.domain.FoodEntryPhoto;
 import com.wellnessmate.food.domain.FoodEntrySource;
 import com.wellnessmate.food.domain.MealType;
 import com.wellnessmate.food.repository.FoodCatalogRepository;
+import com.wellnessmate.food.repository.FoodCategoryRepository;
 import com.wellnessmate.food.repository.FoodEntryItemRepository;
 import com.wellnessmate.food.repository.FoodEntryPhotoRepository;
 import com.wellnessmate.food.repository.FoodEntryRepository;
+import com.wellnessmate.food.repository.FoodServingSizeRepository;
 import com.wellnessmate.tracker.domain.TrackerEntry;
 import com.wellnessmate.tracker.domain.TrackerSource;
 import com.wellnessmate.tracker.domain.TrackerType;
@@ -42,15 +47,20 @@ public class FoodService {
   private static final BigDecimal MAX_MEAL_CALORIES = new BigDecimal("20000");
 
   private final FoodCatalogRepository catalog;
+  private final FoodCategoryRepository categories;
+  private final FoodServingSizeRepository servingSizes;
   private final FoodEntryRepository foodEntries;
   private final FoodEntryItemRepository foodItems;
   private final FoodEntryPhotoRepository foodPhotos;
   private final TrackerEntryRepository trackerEntries;
 
-  public FoodService(FoodCatalogRepository catalog, FoodEntryRepository foodEntries,
+  public FoodService(FoodCatalogRepository catalog, FoodCategoryRepository categories,
+                     FoodServingSizeRepository servingSizes, FoodEntryRepository foodEntries,
                      FoodEntryItemRepository foodItems, FoodEntryPhotoRepository foodPhotos,
                      TrackerEntryRepository trackerEntries) {
     this.catalog = catalog;
+    this.categories = categories;
+    this.servingSizes = servingSizes;
     this.foodEntries = foodEntries;
     this.foodItems = foodItems;
     this.foodPhotos = foodPhotos;
@@ -58,10 +68,26 @@ public class FoodService {
   }
 
   @Transactional(readOnly = true)
-  public List<FoodCatalogResponse> search(String query, int limit) {
+  public List<FoodCatalogResponse> search(String query, Long categoryId, int limit) {
     String normalized = query == null ? "" : query.trim();
-    return catalog.search(normalized, PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
+    return catalog.search(normalized, categoryId, PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
         .stream().map(FoodCatalogResponse::from).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<FoodCategoryResponse> listCategories() {
+    return categories.findAllByOrderBySortOrderAsc().stream()
+        .map(FoodCategoryResponse::from).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public FoodDetailResponse foodDetail(Long id) {
+    FoodCatalogItem food = catalog.findById(id)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "FOOD_NOT_FOUND",
+            "Food not found"));
+    List<ServingSizeResponse> sizes = servingSizes.findByCatalogItemIdOrderBySortOrderAsc(id)
+        .stream().map(ServingSizeResponse::from).toList();
+    return FoodDetailResponse.from(food, sizes);
   }
 
   @Transactional

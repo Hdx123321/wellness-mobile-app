@@ -4,6 +4,8 @@ import com.wellnessmate.app.data.AnalyzedFoodEntryRequest
 import com.wellnessmate.app.data.FoodAnalysisItemResponse
 import com.wellnessmate.app.data.FoodAnalysisResponse
 import com.wellnessmate.app.data.FoodCatalogItemResponse
+import com.wellnessmate.app.data.FoodCategoryResponse
+import com.wellnessmate.app.data.FoodDetailResponse
 import com.wellnessmate.app.data.FoodEntryRequest
 import com.wellnessmate.app.data.FoodEntryResponse
 import com.wellnessmate.app.data.FoodNutrients
@@ -98,9 +100,15 @@ private class FakeFoodRepository : FoodRepository {
     var photoAnalysisRequest: AnalyzedFoodEntryRequest? = null
     var photoThumbnail: ByteArray? = null
 
-    override suspend fun catalog(query: String) = Result.success(listOf(
+    override suspend fun catalog(query: String, categoryId: Long?) = Result.success(listOf(
         FoodCatalogItemResponse(1, "Chicken breast", 165.0, 31.0, 0.0, 3.6, 0.0),
     ))
+
+    override suspend fun categories() = Result.success(emptyList<FoodCategoryResponse>())
+
+    override suspend fun foodDetail(id: Long) = Result.success(
+        FoodDetailResponse(id, "Chicken breast", null, 165.0, 31.0, 0.0, 3.6, 0.0, null, emptyList()),
+    )
 
     override suspend fun entries(from: String, to: String) = Result.success(emptyList<FoodEntryResponse>())
 

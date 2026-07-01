@@ -128,6 +128,35 @@ data class FoodCatalogItemResponse(
     val carbohydratePer100g: Double,
     val fatPer100g: Double,
     val fiberPer100g: Double,
+    val categoryId: Long? = null,
+    val imageUrl: String? = null,
+)
+
+data class FoodCategoryResponse(
+    val id: Long,
+    val name: String,
+    val nameCn: String,
+)
+
+data class ServingSizeResponse(
+    val id: Long,
+    val label: String,
+    val labelCn: String,
+    val grams: Double,
+    val isDefault: Boolean,
+)
+
+data class FoodDetailResponse(
+    val id: Long,
+    val name: String,
+    val imageUrl: String?,
+    val caloriesPer100g: Double,
+    val proteinPer100g: Double,
+    val carbohydratePer100g: Double,
+    val fatPer100g: Double,
+    val fiberPer100g: Double,
+    val categoryId: Long?,
+    val servingSizes: List<ServingSizeResponse>,
 )
 
 data class FoodNutrients(
