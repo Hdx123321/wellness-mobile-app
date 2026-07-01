@@ -3,9 +3,12 @@ package com.wellnessmate.app.data
 import retrofit2.HttpException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** User-facing API failure with a stable fallback message. @author TODO(team member) */
 class ApiFailure(message: String) : RuntimeException(message)
@@ -190,12 +193,86 @@ class NetworkCoachChatRepository(private val api: WellnessApi) : CoachChatReposi
 interface AiAdvisorRepository {
     suspend fun messages(): Result<List<AiAdvisorMessageResponse>>
     suspend fun send(content: String): Result<AiAdvisorMessageResponse>
+    suspend fun sendStream(content: String, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse>
 }
 
-class NetworkAiAdvisorRepository(private val api: WellnessApi) : AiAdvisorRepository {
+class NetworkAiAdvisorRepository(
+    private val api: WellnessApi,
+    private val okHttpClient: OkHttpClient,
+    private val baseUrl: String,
+    private val tokenStore: TokenStore,
+) : AiAdvisorRepository {
     override suspend fun messages() = apiResult { api.aiAdvisorMessages() }
     override suspend fun send(content: String) = apiResult {
         api.sendAiAdvisorMessage(AiAdvisorMessageRequest(content.trim()))
+    }
+
+    override suspend fun sendStream(content: String, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+                val jsonBody = moshi.adapter(AiAdvisorMessageRequest::class.java)
+                    .toJson(AiAdvisorMessageRequest(content.trim()))
+                val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
+                val requestBuilder = okhttp3.Request.Builder()
+                    .url("${baseUrl}api/ai-advisor/messages/stream")
+                    .post(requestBody)
+                tokenStore.token()?.let { requestBuilder.header("Authorization", "Bearer $it") }
+                val response = okHttpClient.newCall(requestBuilder.build()).execute()
+
+                if (!response.isSuccessful) {
+                    val code = response.code
+                    response.close()
+                    val message = when (code) {
+                        503 -> "AI service is not configured on the server."
+                        502 -> "AI advisor is temporarily unavailable."
+                        else -> "Server request failed ($code)."
+                    }
+                    return@withContext Result.failure(ApiFailure(message))
+                }
+
+                val source = response.body?.source() ?: run {
+                    response.close()
+                    return@withContext Result.failure(ApiFailure("Empty response"))
+                }
+
+                var messageId = -1L
+                var createdAt = ""
+                val fullText = StringBuilder()
+
+                while (!source.exhausted()) {
+                    val line = source.readUtf8Line() ?: break
+                    // SSE format: "data:value" or "data: value" — strip prefix
+                    val data = when {
+                        line.startsWith("data:") -> line.substring(5).trimStart()
+                        else -> continue
+                    }
+                    if (data.isEmpty()) continue
+                    // Try JSON parse — done event has {"type":"done",...}
+                    val done = try {
+                        moshi.adapter(Map::class.java).fromJson(data) as? Map<*, *>
+                    } catch (_: Exception) { null }
+                    if (done != null && done["type"] == "done") {
+                        messageId = (done["messageId"] as? Number)?.toLong() ?: -1L
+                        createdAt = done["createdAt"]?.toString() ?: ""
+                        break
+                    }
+                    // Plain token
+                    fullText.append(data)
+                    onToken(data)
+                }
+                response.close()
+
+                if (messageId == -1L) {
+                    // Stream completed but no done event — create a synthetic response
+                    messageId = -System.currentTimeMillis()
+                    createdAt = ""
+                }
+                Result.success(AiAdvisorMessageResponse(messageId, "ASSISTANT", fullText.toString(), createdAt))
+            } catch (e: Exception) {
+                Result.failure(ApiFailure("Stream failed: ${e.message}"))
+            }
+        }
     }
 }
 
