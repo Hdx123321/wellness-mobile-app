@@ -81,6 +81,25 @@ class HealthProfileViewModel(
         }
     }
 
+    fun updateGoal(targetWeightKg: Double?, goalDurationWeeks: Int?, onSaved: () -> Unit) {
+        val profile = _state.value.profile ?: return
+        if (_state.value.saving) return
+        _state.value = _state.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            profiles.updateGoal(profile, targetWeightKg, goalDurationWeeks).fold(
+                onSuccess = {
+                    _state.value = _state.value.copy(
+                        saving = false,
+                        profile = it,
+                        metrics = calculateHealthMetrics(it, _state.value.metrics?.currentWeightKg),
+                    )
+                    onSaved()
+                },
+                onFailure = { _state.value = _state.value.copy(saving = false, error = it.message) },
+            )
+        }
+    }
+
     fun clearError() { _state.value = _state.value.copy(error = null) }
 
     companion object {

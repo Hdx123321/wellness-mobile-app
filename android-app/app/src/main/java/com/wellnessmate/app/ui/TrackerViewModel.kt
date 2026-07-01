@@ -98,6 +98,25 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
         }
     }
 
+    fun saveAll(requests: List<TrackerEntryRequest>, onSaved: () -> Unit) {
+        if (_state.value.saving || requests.isEmpty()) return
+        _state.value = _state.value.copy(saving = true, error = null)
+        viewModelScope.launch {
+            for (request in requests) {
+                val result = repository.create(request)
+                if (result.isFailure) {
+                    _state.value = _state.value.copy(saving = false, error = result.exceptionOrNull()?.message)
+                    return@launch
+                }
+            }
+            _state.value = _state.value.copy(saving = false)
+            val date = Instant.parse(requests.first().recordedAt)
+                .atZone(ZoneId.systemDefault()).toLocalDate()
+            loadDate(date)
+            onSaved()
+        }
+    }
+
     fun delete(id: Long) {
         val date = _state.value.entries.firstOrNull { it.id == id }?.let {
             runCatching { Instant.parse(it.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate() }.getOrNull()

@@ -22,7 +22,9 @@ class NetworkAuthRepository(
 ) : AuthRepository {
     override fun restoredSession(): SessionUser? = tokenStore.session()
 
-    override suspend fun login(identifier: String, password: String): Result<SessionUser> = apiResult {
+    override suspend fun login(identifier: String, password: String): Result<SessionUser> = apiResult(
+        expireSessionOnUnauthorized = false,
+    ) {
         api.login(LoginRequest(identifier.trim(), password)).also(tokenStore::save).toSession()
     }
 
@@ -31,7 +33,7 @@ class NetworkAuthRepository(
         email: String,
         password: String,
         displayName: String?,
-    ): Result<SessionUser> = apiResult {
+    ): Result<SessionUser> = apiResult(expireSessionOnUnauthorized = false) {
         api.register(RegisterRequest(username.trim(), email.trim(), password, displayName?.trim()))
             .also(tokenStore::save)
             .toSession()
@@ -65,12 +67,29 @@ class NetworkOnboardingRepository(private val api: WellnessApi) : OnboardingRepo
 interface HealthProfileRepository {
     suspend fun profile(): Result<ProfileResponse>
     suspend fun updateHeight(profile: ProfileResponse, heightCm: Double): Result<ProfileResponse>
+    suspend fun updateGoal(
+        profile: ProfileResponse,
+        targetWeightKg: Double?,
+        goalDurationWeeks: Int?,
+    ): Result<ProfileResponse>
 }
 
 class NetworkHealthProfileRepository(private val api: WellnessApi) : HealthProfileRepository {
     override suspend fun profile() = apiResult { api.profile() }
     override suspend fun updateHeight(profile: ProfileResponse, heightCm: Double) = apiResult {
         api.saveProfile(profile.toUpdate(heightCm))
+    }
+    override suspend fun updateGoal(
+        profile: ProfileResponse,
+        targetWeightKg: Double?,
+        goalDurationWeeks: Int?,
+    ) = apiResult {
+        api.saveProfile(
+            profile.toUpdate().copy(
+                targetWeightKg = targetWeightKg,
+                goalDurationWeeks = goalDurationWeeks,
+            )
+        )
     }
 }
 
@@ -157,16 +176,21 @@ class NetworkAiAdvisorRepository(private val api: WellnessApi) : AiAdvisorReposi
     }
 }
 
-private suspend fun <T> apiResult(block: suspend () -> T): Result<T> {
+private suspend fun <T> apiResult(
+    expireSessionOnUnauthorized: Boolean = true,
+    block: suspend () -> T,
+): Result<T> {
     return try {
         Result.success(block())
     } catch (error: Throwable) {
         val message = when (error) {
             is HttpException -> when (error.code()) {
                 400 -> "Please check the entered values."
-                401 -> {
+                401 -> if (expireSessionOnUnauthorized) {
                     SessionManager.expireSession()  // ← 触发全局登出，跳转登录页
                     "Your session has expired. Please sign in again."
+                } else {
+                    "Incorrect username/email or password."
                 }
                 409 -> "This account information is already in use."
                 422 -> "No food could be recognized. Try a clearer photo."
