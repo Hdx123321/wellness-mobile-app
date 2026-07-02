@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -43,10 +44,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
@@ -70,6 +73,7 @@ import com.wellnessmate.app.ui.FoodViewModel
 import com.wellnessmate.app.ui.CoachChatViewModel
 import com.wellnessmate.app.ui.HealthProfileViewModel
 import com.wellnessmate.app.ui.AiAdvisorViewModel
+import com.wellnessmate.app.ui.TrainingPlanViewModel
 import com.wellnessmate.app.ui.advisor.AiAdvisorScreen
 import com.wellnessmate.app.ui.chat.CoachChatScreen
 import com.wellnessmate.app.ui.food.FoodCameraScreen
@@ -79,8 +83,10 @@ import com.wellnessmate.app.ui.food.FoodTrackerScreen
 import com.wellnessmate.app.ui.health.HealthProfileScreen
 import com.wellnessmate.app.ui.health.HealthSummaryCard
 import com.wellnessmate.app.ui.health.HeightPickerScreen
+import com.wellnessmate.app.ui.plan.TrainingPlanScreen
 import com.wellnessmate.app.ui.user.ReminderScreen
 import com.wellnessmate.app.ui.user.UserManagementScreen
+import com.wellnessmate.app.ui.components.WellnessIconButton
 import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -94,6 +100,7 @@ import kotlin.math.roundToInt
 
 private const val HOME = "home"
 private const val COACH = "coach"
+private const val PLANS = "plans"
 private const val ADVISOR = "advisor"
 private const val USER_MANAGEMENT = "user-management"
 private const val REMINDER = "reminder"
@@ -118,6 +125,7 @@ fun MainTrackerNav(
     coachChatViewModel: CoachChatViewModel,
     healthProfileViewModel: HealthProfileViewModel,
     aiAdvisorViewModel: AiAdvisorViewModel,
+    trainingPlanViewModel: TrainingPlanViewModel,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -154,19 +162,18 @@ fun MainTrackerNav(
             )
         },
         bottomBar = {
-            if (user.role != "COACH" && (route == HOME || route == ADVISOR || route == COACH)) {
+            if (route == HOME || route == ADVISOR || route == COACH || route == PLANS) {
                 Row(
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) {
-                        Text("Home")
-                    }
-                    TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) {
-                        Text("AI Advisor")
-                    }
-                    TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) {
-                        Text("Coach")
+                    if (user.role == "COACH") {
+                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) { Text("Plans") }
+                        TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) { Text("Messages") }
+                    } else {
+                        TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) { Text("Home") }
+                        TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) { Text("AI Advisor") }
+                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) { Text("Plans") }
                     }
                 }
             }
@@ -174,7 +181,7 @@ fun MainTrackerNav(
     ) { padding ->
         NavHost(
             navController,
-            startDestination = if (user.role == "COACH") COACH else HOME,
+            startDestination = if (user.role == "COACH") PLANS else HOME,
             modifier = Modifier.padding(padding),
         ) {
             composable(HOME) {
@@ -196,6 +203,9 @@ fun MainTrackerNav(
                 )
             }
             composable(ADVISOR) { AiAdvisorScreen(aiAdvisorViewModel) }
+            composable(PLANS) {
+                TrainingPlanScreen(user, trainingPlanViewModel) { navController.navigate(COACH) }
+            }
             composable(COACH) {
                 CoachChatScreen(user, coachChatViewModel)
             }
@@ -401,6 +411,16 @@ private fun HomeScreen(
     val state by viewModel.state.collectAsState()
     val foodState by foodViewModel.state.collectAsState()
     val profileState by healthProfileViewModel.state.collectAsState()
+    val context = LocalContext.current
+    val preferenceKey = "optional_trackers_${user.userId}"
+    val preferences = remember { context.getSharedPreferences("home_trackers", android.content.Context.MODE_PRIVATE) }
+    var selectedOptionalTrackers by remember(user.userId) {
+        mutableStateOf(preferences.getStringSet(preferenceKey, emptySet()).orEmpty().toSet())
+    }
+    var showTrackerPicker by rememberSaveable { mutableStateOf(false) }
+    val primaryTypes = state.types.filter { it.type in PRIMARY_TRACKERS }
+        .sortedBy { PRIMARY_TRACKERS.indexOf(it.type) }
+    val optionalTypes = state.types.filter { it.type !in PRIMARY_TRACKERS }
     if (state.loading) return LoadingState()
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item {
@@ -413,7 +433,7 @@ private fun HomeScreen(
             Text("Trackers", style = MaterialTheme.typography.titleLarge)
             ErrorBanner(state.error, viewModel::clearError)
         }
-        items(state.types) { type ->
+        items(primaryTypes, key = { it.type }) { type ->
             if (type.type == "FOOD") {
                 val foodEntries = foodState.entries.filter { entry ->
                     runCatching {
@@ -468,28 +488,99 @@ private fun HomeScreen(
                 )
                 return@items
             }
-            val dayEntries = state.entries.filter { it.type == type.type && entryDate(it) == selectedDate }
-            val value = if (type.type == "WEIGHT") dayEntries.maxByOrNull { it.recordedAt }?.amount
-                else dayEntries.sumOf { it.amount }.takeIf { dayEntries.isNotEmpty() }
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onTracker(type.type) },
+        }
+        items(
+            optionalTypes.filter { it.type in selectedOptionalTrackers }.chunked(2),
+            key = { row -> row.joinToString { it.type } },
+        ) { rowTypes ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Text(typeLabel(type.type), style = MaterialTheme.typography.titleMedium)
-                        Text(value?.let { "${formatAmount(it)} ${type.unit}" } ?: "No data")
+                rowTypes.forEach { type ->
+                    val dayEntries = state.entries.filter {
+                        it.type == type.type && entryDate(it) == selectedDate
                     }
-                    Text("View")
+                    OptionalTrackerCard(
+                        type = type,
+                        value = dayEntries.sumOf { it.amount }.takeIf { dayEntries.isNotEmpty() },
+                        onOpen = { onTracker(type.type) },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
+                if (rowTypes.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+        item {
+            OutlinedButton(
+                onClick = { showTrackerPicker = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text("＋ Manage trackers")
             }
         }
         item {
             TextButton(onClick = viewModel::refresh, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.refresh))
+            }
+        }
+    }
+
+    if (showTrackerPicker) {
+        AlertDialog(
+            onDismissRequest = { showTrackerPicker = false },
+            title = { Text("Choose trackers") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    optionalTypes.forEach { type ->
+                        val selected = type.type in selectedOptionalTrackers
+                        OutlinedButton(
+                            onClick = {
+                                selectedOptionalTrackers = if (selected) {
+                                    selectedOptionalTrackers - type.type
+                                } else {
+                                    selectedOptionalTrackers + type.type
+                                }
+                                preferences.edit()
+                                    .putStringSet(preferenceKey, selectedOptionalTrackers)
+                                    .apply()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("${trackerIcon(type.type)}  ${typeLabel(type.type)}  ${if (selected) "✓" else "+"}")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTrackerPicker = false }) { Text("Done") }
+            },
+        )
+    }
+}
+
+@Composable
+private fun OptionalTrackerCard(
+    type: TrackerTypeResponse,
+    value: Double?,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.padding(vertical = 6.dp).height(132.dp).clickable(onClick = onOpen),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(trackerIcon(type.type), style = MaterialTheme.typography.headlineMedium)
+            Column {
+                Text(typeLabel(type.type), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    value?.let { "${formatAmount(it)} ${type.unit}" } ?: "No data",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -513,7 +604,7 @@ private fun FoodHomeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
-                    Text("Food", style = MaterialTheme.typography.titleMedium)
+                    Text("${trackerIcon("FOOD")} Food", style = MaterialTheme.typography.titleMedium)
                     Text("${formatAmount(calories)} kcal")
                 }
                 TextButton(onClick = onOpen) { Text("View") }
@@ -573,7 +664,7 @@ private fun WeightHomeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
-                    Text("Weight", style = MaterialTheme.typography.titleMedium)
+                    Text("${trackerIcon("WEIGHT")} Weight", style = MaterialTheme.typography.titleMedium)
                     Text(weight?.let { "${formatAmount(it)} $unit" } ?: "No data")
                     updatedAt?.let {
                         Text(
@@ -606,7 +697,7 @@ private fun WorkoutHomeCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Workout", style = MaterialTheme.typography.titleMedium)
+                Text("${trackerIcon("WORKOUT")} Workout", style = MaterialTheme.typography.titleMedium)
                 Text("View")
             }
             Row(
@@ -674,10 +765,9 @@ private fun TrackerDetailScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(typeLabel(type), style = MaterialTheme.typography.headlineMedium)
+                Text("${trackerIcon(type)} ${typeLabel(type)}", style = MaterialTheme.typography.headlineMedium)
                 TextButton(onClick = onBack) { Text("Back") }
             }
             ErrorBanner(state.error, viewModel::clearError)
@@ -1203,7 +1293,6 @@ private fun WeightTrendsScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Weight Trends", style = MaterialTheme.typography.headlineMedium)
@@ -1365,7 +1454,10 @@ private fun TrackerFormScreen(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
     ) {
         Text(
-            stringResource(if (id == null) R.string.add_tracker_title else R.string.edit_tracker_title, typeLabel(type)),
+            stringResource(
+                if (id == null) R.string.add_tracker_title else R.string.edit_tracker_title,
+                "${trackerIcon(type)} ${typeLabel(type)}",
+            ),
             style = MaterialTheme.typography.headlineMedium,
         )
         OutlinedTextField(
@@ -1458,7 +1550,23 @@ fun ErrorBanner(error: String?, dismiss: () -> Unit) {
     }
 }
 
-private fun typeLabel(type: String): String = type.lowercase().replaceFirstChar(Char::uppercase)
+private val PRIMARY_TRACKERS = listOf("FOOD", "WEIGHT", "WORKOUT")
+
+private fun trackerIcon(type: String): String = when (type) {
+    "FOOD" -> "🍽️"
+    "WEIGHT" -> "⚖️"
+    "WORKOUT" -> "🏃"
+    "STEPS" -> "👟"
+    "SLEEP" -> "🌙"
+    "WATER" -> "💧"
+    "MEDICINE" -> "💊"
+    "HEART_RATE" -> "♥️"
+    "BLOOD_GLUCOSE" -> "🩸"
+    else -> "●"
+}
+
+private fun typeLabel(type: String): String = type.lowercase().split('_')
+    .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
 fun formatAmount(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else "%.2f".format(value)
 fun formatTime(value: String): String = runCatching {
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")

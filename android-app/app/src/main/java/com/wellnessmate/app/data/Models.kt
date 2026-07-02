@@ -249,6 +249,36 @@ data class CoachMessageResponse(
     val createdAt: String,
 )
 
+data class TrainingPlanRequest(
+    val title: String,
+    val goal: String,
+    val difficulty: String,
+    val durationWeeks: Int,
+    val summary: String,
+    val weeklySchedule: String,
+    val equipment: String?,
+    val safetyNotes: String?,
+    val videoUrl: String?,
+)
+
+data class TrainingPlanResponse(
+    val id: Long,
+    val coachId: Long,
+    val coachName: String,
+    val title: String,
+    val goal: String,
+    val difficulty: String,
+    val durationWeeks: Int,
+    val summary: String,
+    val weeklySchedule: String,
+    val equipment: String?,
+    val safetyNotes: String?,
+    val videoUrl: String?,
+    val checkInCount: Long,
+    val checkedInToday: Boolean,
+    val createdAt: String,
+)
+
 data class AiAdvisorMessageRequest(val content: String)
 
 data class AiAdvisorMessageResponse(

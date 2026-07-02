@@ -9,7 +9,11 @@ public enum TrackerType {
   WORKOUT("min", "Duration", "Workout type", true, decimal("1"), decimal("1440"), false),
   STEPS("steps", "Steps", null, false, decimal("0"), decimal("200000"), true),
   SLEEP("min", "Duration", null, false, decimal("0"), decimal("1440"), false),
-  WATER("ml", "Volume", null, false, decimal("0"), decimal("20000"), false);
+  WATER("ml", "Volume", null, false, decimal("0"), decimal("20000"), false),
+  MEDICINE("dose", "Dose", "Medicine name", true, decimal("0.01"), decimal("1000"), false),
+  HEART_RATE("bpm", "Heart rate", null, false, decimal("20"), decimal("250"), true),
+  BLOOD_GLUCOSE("mmol/L", "Blood glucose", "Measurement timing", false,
+      decimal("1"), decimal("40"), false);
 
   private final String unit;
   private final String amountLabel;

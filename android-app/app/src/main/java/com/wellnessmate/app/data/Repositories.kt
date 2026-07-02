@@ -190,6 +190,18 @@ class NetworkCoachChatRepository(private val api: WellnessApi) : CoachChatReposi
     }
 }
 
+interface TrainingPlanRepository {
+    suspend fun plans(): Result<List<TrainingPlanResponse>>
+    suspend fun create(request: TrainingPlanRequest): Result<TrainingPlanResponse>
+    suspend fun checkIn(id: Long): Result<TrainingPlanResponse>
+}
+
+class NetworkTrainingPlanRepository(private val api: WellnessApi) : TrainingPlanRepository {
+    override suspend fun plans() = apiResult { api.trainingPlans() }
+    override suspend fun create(request: TrainingPlanRequest) = apiResult { api.createTrainingPlan(request) }
+    override suspend fun checkIn(id: Long) = apiResult { api.checkInTrainingPlan(id) }
+}
+
 interface AiAdvisorRepository {
     suspend fun messages(): Result<List<AiAdvisorMessageResponse>>
     suspend fun send(content: String): Result<AiAdvisorMessageResponse>

@@ -117,6 +117,15 @@ interface WellnessApi {
         @Body request: CoachMessageRequest,
     ): CoachMessageResponse
 
+    @GET("api/training-plans")
+    suspend fun trainingPlans(): List<TrainingPlanResponse>
+
+    @POST("api/training-plans")
+    suspend fun createTrainingPlan(@Body request: TrainingPlanRequest): TrainingPlanResponse
+
+    @POST("api/training-plans/{id}/check-ins")
+    suspend fun checkInTrainingPlan(@Path("id") id: Long): TrainingPlanResponse
+
     @GET("api/ai-advisor/messages")
     suspend fun aiAdvisorMessages(): List<AiAdvisorMessageResponse>
 

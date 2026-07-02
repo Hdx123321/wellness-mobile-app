@@ -64,6 +64,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -77,6 +78,7 @@ import com.wellnessmate.app.data.FoodEntryResponse
 import com.wellnessmate.app.data.FoodNutrients
 import com.wellnessmate.app.ui.FoodViewModel
 import com.wellnessmate.app.ui.HealthProfileViewModel
+import com.wellnessmate.app.ui.components.WellnessIconButton
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -119,7 +121,6 @@ fun FoodTrackerScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Food tracker", style = MaterialTheme.typography.headlineMedium)
@@ -154,15 +155,15 @@ fun FoodTrackerScreen(
                                 Text(meal.label, style = MaterialTheme.typography.titleLarge)
                                 Text("${format(totalEntries(mealEntries).calories)} kcal")
                             }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Button(onClick = { onAddFood(selectedDate, meal.name) }) { Text("Add food") }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                WellnessIconButton("+", "Add food", onClick = { onAddFood(selectedDate, meal.name) })
                                 if (selectedDate == LocalDate.now()) {
-                                    TextButton(onClick = { onTakePhoto(selectedDate, meal.name) }) { Text("Take photo") }
-                                    TextButton(onClick = {
+                                    WellnessIconButton("📷", "Take photo", onClick = { onTakePhoto(selectedDate, meal.name) })
+                                    WellnessIconButton("🖼️", "Choose photo", onClick = {
                                         pendingPhotoDate = selectedDate
                                         pendingPhotoMeal = meal.name
                                         photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                    }) { Text("Choose photo") }
+                                    })
                                 }
                             }
                         }
@@ -524,7 +525,7 @@ private fun SelectedFoodsBottomSheet(
                     Text("${existingItems.size + newFoods.size} items in $mealLabel", style = MaterialTheme.typography.titleLarge)
                     Text("${format(totalCalories)} kcal total")
                 }
-                TextButton(onClick = onDismiss) { Text("Close") }
+                WellnessIconButton("×", "Close", onDismiss)
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
@@ -946,7 +947,7 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
                 }
                 Box(modifier = Modifier.size(170.dp), contentAlignment = Alignment.Center) {
                     val ringColor = MaterialTheme.colorScheme.primary
-                    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    val trackColor = Color(0xFFD6D6D6)
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val stroke = 15.dp.toPx()
                         val inset = stroke / 2
@@ -963,7 +964,8 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Remaining")
                         Text(remaining.toString(), style = MaterialTheme.typography.headlineLarge)
-                        Text("Estimated budget $budget", style = MaterialTheme.typography.bodySmall)
+                        Text("Estimated budget", style = MaterialTheme.typography.bodySmall)
+                        Text(budget.toString(), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -976,7 +978,6 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
                 MacroProgress("Protein", nutrients.proteinGrams, proteinGoal, Modifier.weight(1f))
                 MacroProgress("Fat", nutrients.fatGrams, fatGoal, Modifier.weight(1f))
             }
-            Text("Budget and macro targets are estimates based on profile and activity level.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 10.dp))
         }
     }
 }
@@ -988,6 +989,10 @@ private fun MacroProgress(label: String, amount: Double, goal: Double, modifier:
         LinearProgressIndicator(
             progress = { (amount / goal.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            trackColor = Color(0xFFD6D6D6),
+            strokeCap = StrokeCap.Butt,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
         )
         Text("${format(amount)} / ${format(goal)} g", style = MaterialTheme.typography.bodySmall)
     }
