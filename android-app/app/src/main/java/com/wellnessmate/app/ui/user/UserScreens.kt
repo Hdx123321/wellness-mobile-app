@@ -134,7 +134,6 @@ private fun MenuCard(title: String, subtitle: String, onClick: () -> Unit) {
 private fun Header(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.headlineMedium)

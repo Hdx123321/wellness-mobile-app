@@ -54,6 +54,7 @@ import com.wellnessmate.app.data.TrackerEntryRequest
 import com.wellnessmate.app.data.TrackerEntryResponse
 import com.wellnessmate.app.ui.HealthProfileViewModel
 import com.wellnessmate.app.ui.TrackerViewModel
+import com.wellnessmate.app.ui.components.WellnessIconButton
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -197,7 +198,6 @@ fun WorkoutTrackerScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Workout Tracker", style = MaterialTheme.typography.headlineMedium)
@@ -560,7 +560,7 @@ fun WorkoutSelectionScreen(
                 Text("Add workout", style = MaterialTheme.typography.titleLarge)
                 Text(date.toString(), style = MaterialTheme.typography.bodySmall)
             }
-            TextButton(onClick = onBack) { Text("Close") }
+            WellnessIconButton("×", "Close", onBack)
         }
         OutlinedTextField(
             value = query,
@@ -708,7 +708,7 @@ private fun LegacyWorkoutSelectionScreen(
                         Text(workout.emoji, style = MaterialTheme.typography.headlineSmall)
                         Text(workout.label, modifier = Modifier.padding(start = 12.dp))
                     }
-                    Text("Add")
+                    Text("+")
                 }
             }
         }
@@ -807,9 +807,12 @@ private fun WorkoutSelectedBottomSheet(
                 }
                 HorizontalDivider()
             }
-            TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("Close")
-            }
+            WellnessIconButton(
+                symbol = "×",
+                contentDescription = "Close",
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
         }
     }
 }
@@ -846,7 +849,7 @@ private fun WorkoutInputSheet(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("${date.monthValue}/${date.dayOfMonth}  Workout", style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = onDismiss) { Text("Close") }
+            WellnessIconButton("×", "Close", onDismiss)
         }
         HorizontalDivider()
 

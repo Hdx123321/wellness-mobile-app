@@ -30,14 +30,17 @@ class TrackerIntegrationTest {
   @Autowired private ObjectMapper objectMapper;
 
   @Test
-  void catalogExposesSixCanonicalTypes() throws Exception {
+  void catalogExposesNineCanonicalTypes() throws Exception {
     String token = register("cataloguser");
 
     mockMvc.perform(get("/api/trackers/types").header("Authorization", bearer(token)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(6))
+        .andExpect(jsonPath("$.length()").value(9))
         .andExpect(jsonPath("$[?(@.type == 'WEIGHT')].unit").value("kg"))
-        .andExpect(jsonPath("$[?(@.type == 'WATER')].unit").value("ml"));
+        .andExpect(jsonPath("$[?(@.type == 'WATER')].unit").value("ml"))
+        .andExpect(jsonPath("$[?(@.type == 'MEDICINE')].detailRequired").value(true))
+        .andExpect(jsonPath("$[?(@.type == 'HEART_RATE')].unit").value("bpm"))
+        .andExpect(jsonPath("$[?(@.type == 'BLOOD_GLUCOSE')].unit").value("mmol/L"));
   }
 
   @Test
@@ -49,11 +52,14 @@ class TrackerIntegrationTest {
     createEntry(token, "STEPS", "8000", null);
     createEntry(token, "SLEEP", "465", null);
     createEntry(token, "WATER", "500", null);
+    createEntry(token, "MEDICINE", "1", "Vitamin D");
+    createEntry(token, "HEART_RATE", "72", null);
+    createEntry(token, "BLOOD_GLUCOSE", "5.6", "Before breakfast");
 
     mockMvc.perform(get("/api/tracker-entries")
             .header("Authorization", bearer(token)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalElements").value(6));
+        .andExpect(jsonPath("$.totalElements").value(9));
 
     mockMvc.perform(get("/api/tracker-entries?type=STEPS")
             .header("Authorization", bearer(token)))
@@ -87,6 +93,13 @@ class TrackerIntegrationTest {
             .content(entryJson("WEIGHT", "700", null)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("TRACKER_AMOUNT_OUT_OF_RANGE"));
+
+    mockMvc.perform(post("/api/tracker-entries")
+            .header("Authorization", bearer(token))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(entryJson("MEDICINE", "1", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("TRACKER_DETAIL_REQUIRED"));
   }
 
   @Test

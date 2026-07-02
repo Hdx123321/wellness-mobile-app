@@ -20,6 +20,7 @@ import com.wellnessmate.app.ui.TrackerViewModel
 import com.wellnessmate.app.ui.CoachChatViewModel
 import com.wellnessmate.app.ui.HealthProfileViewModel
 import com.wellnessmate.app.ui.AiAdvisorViewModel
+import com.wellnessmate.app.ui.TrainingPlanViewModel
 import com.wellnessmate.app.ui.auth.LoginRegisterScreen
 import com.wellnessmate.app.ui.onboarding.OnboardingScreen
 import com.wellnessmate.app.ui.tracker.MainTrackerNav
@@ -78,6 +79,9 @@ private fun WellnessMateApp(container: AppContainer) {
                 val aiAdvisorViewModel: AiAdvisorViewModel = viewModel(
                     factory = AiAdvisorViewModel.factory(container.aiAdvisorRepository),
                 )
+                val trainingPlanViewModel: TrainingPlanViewModel = viewModel(
+                    factory = TrainingPlanViewModel.factory(container.trainingPlanRepository),
+                )
                 MainTrackerNav(
                     user = current.user,
                     viewModel = trackerViewModel,
@@ -85,6 +89,7 @@ private fun WellnessMateApp(container: AppContainer) {
                     coachChatViewModel = coachChatViewModel,
                     healthProfileViewModel = healthProfileViewModel,
                     aiAdvisorViewModel = aiAdvisorViewModel,
+                    trainingPlanViewModel = trainingPlanViewModel,
                     onLogout = authViewModel::logout,
                 )
             }

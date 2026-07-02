@@ -1,6 +1,7 @@
 package com.wellnessmate.app.ui.health
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.wellnessmate.app.data.ProfileResponse
 import com.wellnessmate.app.ui.HealthMetrics
@@ -91,17 +96,90 @@ fun HealthProfileScreen(
                     MetricCard("Weight", "${format(metrics.currentWeightKg)} kg", Modifier.weight(1f), onWeight)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("BMI", format(metrics.bmi), Modifier.weight(1f))
-                    MetricCard("Age", metrics.age.toString(), Modifier.weight(1f))
+                    MetricCard("Basal metabolism", metrics.basalMetabolismText, Modifier.weight(1f))
+                    MetricCard("Fat-burning heart rate", metrics.fatBurningHeartRateText, Modifier.weight(1f))
                 }
-                MetricCard("Estimated basal metabolism", metrics.basalMetabolismText, Modifier.fillMaxWidth())
-                MetricCard("Estimated fat-burning zone", metrics.fatBurningHeartRateText, Modifier.fillMaxWidth())
+                BmiRangeCard(metrics.bmi)
                 Text(
                     "Heart-rate estimates are general exercise-intensity guidance and can be affected by medication or heart conditions.",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                 )
                 GoalCard(profile, metrics)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BmiRangeCard(bmi: Double) {
+    val minimum = 15.0
+    val maximum = 40.0
+    val ranges = listOf(
+        Triple(15.0, 18.5, Color(0xFF64B5F6)),
+        Triple(18.5, 25.0, Color(0xFF66BB6A)),
+        Triple(25.0, 30.0, Color(0xFFFFCA28)),
+        Triple(30.0, 40.0, Color(0xFFEF5350)),
+    )
+    val category = when {
+        bmi < 18.5 -> "Underweight"
+        bmi < 25.0 -> "Healthy"
+        bmi < 30.0 -> "Overweight"
+        else -> "Obesity range"
+    }
+
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Text("BMI", style = MaterialTheme.typography.titleMedium)
+                Text("${format(bmi)} · $category", style = MaterialTheme.typography.titleMedium)
+            }
+            Canvas(modifier = Modifier.fillMaxWidth().height(42.dp).padding(top = 12.dp)) {
+                val barTop = 8.dp.toPx()
+                val barHeight = 12.dp.toPx()
+                ranges.forEach { (start, end, color) ->
+                    val left = ((start - minimum) / (maximum - minimum) * size.width).toFloat()
+                    val width = ((end - start) / (maximum - minimum) * size.width).toFloat()
+                    drawRect(color = color, topLeft = Offset(left, barTop), size = Size(width, barHeight))
+                }
+                val markerX = ((bmi.coerceIn(minimum, maximum) - minimum) /
+                    (maximum - minimum) * size.width).toFloat()
+                drawLine(
+                    color = Color(0xFF212121),
+                    start = Offset(markerX, 0f),
+                    end = Offset(markerX, barTop + barHeight + 7.dp.toPx()),
+                    strokeWidth = 3.dp.toPx(),
+                )
+                drawCircle(
+                    color = Color.White,
+                    radius = 4.dp.toPx(),
+                    center = Offset(markerX, barTop + barHeight / 2),
+                )
+                drawCircle(
+                    color = Color(0xFF212121),
+                    radius = 2.5.dp.toPx(),
+                    center = Offset(markerX, barTop + barHeight / 2),
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf(
+                    "<18.5" to 3.5f,
+                    "18.5–24.9" to 6.5f,
+                    "25–29.9" to 5f,
+                    "30+" to 10f,
+                ).forEach { (label, width) ->
+                    Text(
+                        label,
+                        modifier = Modifier.weight(width),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     }
@@ -155,7 +233,6 @@ fun HeightPickerScreen(viewModel: HealthProfileViewModel, onBack: () -> Unit) {
 private fun Header(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.headlineMedium)
