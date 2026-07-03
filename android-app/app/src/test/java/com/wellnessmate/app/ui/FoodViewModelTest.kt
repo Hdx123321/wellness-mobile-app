@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -92,6 +93,27 @@ class FoodViewModelTest {
         assertTrue(repository.photoThumbnail?.contentEquals(byteArrayOf(1, 2, 3)) == true)
         assertEquals(null, viewModel.state.value.analysis)
     }
+
+    @Test
+    fun failedPhotoAnalysisKeepsUserOnCameraAndClearsDraftPhoto() = runTest {
+        val repository = FakeFoodRepository().also { it.analysisFailure = true }
+        val viewModel = FoodViewModel(repository)
+        var completed = false
+        advanceUntilIdle()
+
+        viewModel.analyze(byteArrayOf(1, 2, 3), java.time.LocalDate.of(2026, 6, 28), "DINNER") {
+            completed = true
+        }
+        advanceUntilIdle()
+
+        assertFalse(completed)
+        assertFalse(viewModel.state.value.analyzing)
+        assertNull(viewModel.state.value.analysis)
+        assertNull(viewModel.state.value.analysisThumbnail)
+        assertNull(viewModel.state.value.analysisDate)
+        assertNull(viewModel.state.value.analysisMealType)
+        assertEquals("Analysis failed", viewModel.state.value.error)
+    }
 }
 
 private class FakeFoodRepository : FoodRepository {
@@ -99,6 +121,7 @@ private class FakeFoodRepository : FoodRepository {
     var analysisRequest: AnalyzedFoodEntryRequest? = null
     var photoAnalysisRequest: AnalyzedFoodEntryRequest? = null
     var photoThumbnail: ByteArray? = null
+    var analysisFailure: Boolean = false
 
     override suspend fun catalog(query: String, categoryId: Long?) = Result.success(listOf(
         FoodCatalogItemResponse(1, "Chicken breast", 165.0, 31.0, 0.0, 3.6, 0.0),
@@ -122,7 +145,7 @@ private class FakeFoodRepository : FoodRepository {
         return Result.success(entry())
     }
 
-    override suspend fun analyze(image: ByteArray) = Result.success(
+    override suspend fun analyze(image: ByteArray) = if (analysisFailure) Result.failure(RuntimeException("Analysis failed")) else Result.success(
         FoodAnalysisResponse(
             summary = "Rice bowl",
             items = listOf(

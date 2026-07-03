@@ -322,10 +322,15 @@ fun MainTrackerNav(
                 )
             }
             composable(FOOD_REVIEW) {
+                fun leaveFoodReview() {
+                    if (!navController.popBackStack(FOOD, inclusive = false)) {
+                        navController.popBackStack()
+                    }
+                }
                 FoodPhotoReviewScreen(
                     viewModel = foodViewModel,
-                    onSaved = { navController.popBackStack(FOOD, inclusive = false) },
-                    onDiscard = { navController.popBackStack(FOOD, inclusive = false) },
+                    onSaved = ::leaveFoodReview,
+                    onDiscard = ::leaveFoodReview,
                     onTrackerChanged = { viewModel.loadDate(selectedDate) },
                 )
             }
