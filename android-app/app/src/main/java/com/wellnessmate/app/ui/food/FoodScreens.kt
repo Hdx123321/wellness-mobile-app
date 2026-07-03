@@ -110,8 +110,7 @@ fun FoodTrackerScreen(
         if (uri != null && date != null && meal != null) {
             val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             if (bytes != null) {
-                viewModel.analyze(compressForAnalysis(bytes), date, meal) {}
-                onReviewPhoto()
+                viewModel.analyze(compressForAnalysis(bytes), date, meal, onReviewPhoto)
             }
         }
     }
@@ -599,6 +598,16 @@ fun FoodCameraScreen(
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Photograph your meal", style = MaterialTheme.typography.headlineMedium)
         Text("The photo is sent to the configured server AI only when you tap Analyze.", modifier = Modifier.padding(8.dp))
+        state.error?.let {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                TextButton(onClick = viewModel::clearError) { Text("Dismiss") }
+            }
+        }
         if (!granted) {
             Button(onClick = { permission.launch(Manifest.permission.CAMERA) }) { Text("Allow camera") }
             TextButton(onClick = onCancel) { Text("Cancel") }
@@ -606,8 +615,7 @@ fun FoodCameraScreen(
             CameraPreview(
                 busy = state.analyzing,
                 onPhoto = {
-                    viewModel.analyze(it, date, mealType) {}
-                    onComplete()
+                    viewModel.analyze(it, date, mealType, onComplete)
                 },
                 onCancel = onCancel,
             )
