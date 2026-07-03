@@ -72,6 +72,8 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.6.1")
     implementation("androidx.camera:camera-lifecycle:1.6.1")
     implementation("androidx.camera:camera-view:1.6.1")
+    implementation("io.coil-kt.coil3:coil-compose:3.5.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.5.0")
 
     implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
     implementation("com.squareup.retrofit2:retrofit:3.0.0")

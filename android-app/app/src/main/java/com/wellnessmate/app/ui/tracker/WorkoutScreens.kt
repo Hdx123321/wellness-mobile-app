@@ -358,9 +358,11 @@ private fun WorkoutWeekSummaryCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                SummaryTile("Goal", "$workoutDays / 7 days", Modifier.weight(1f))
+                SummaryTile("Goal", "$workoutDays / 7", Modifier.weight(1f))
                 SummaryTile("Daily avg", "${dailyAverageCalories.roundToInt()} kcal", Modifier.weight(1f))
-                SummaryTile("Duration", "${totalDuration.roundToInt()} min", Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                SummaryTile("Total duration", "${totalDuration.roundToInt()} min", Modifier.fillMaxWidth())
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
@@ -399,8 +401,8 @@ private fun SummaryTile(label: String, value: String, modifier: Modifier = Modif
             .background(Color.White.copy(alpha = 0.8f)).padding(vertical = 12.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     }
 }
 

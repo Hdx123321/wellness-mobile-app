@@ -7,6 +7,7 @@ import com.wellnessmate.app.BuildConfig
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.util.concurrent.TimeUnit
 
 /** Application-scoped network and repository dependencies. @author TODO(team member) */
 class AppContainer(context: Context) {
@@ -17,6 +18,10 @@ class AppContainer(context: Context) {
 
     init {
         okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder().apply {
                     tokenStore.token()?.let { header("Authorization", "Bearer $it") }
