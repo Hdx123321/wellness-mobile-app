@@ -170,10 +170,18 @@ class FoodViewModel(private val repository: FoodRepository) : ViewModel() {
                         analysisMealType = mealType,
                         analysisThumbnail = image,
                     )
+                    onComplete()
                 },
-                onFailure = { _state.value = _state.value.copy(analyzing = false, error = it.message) },
+                onFailure = {
+                    _state.value = _state.value.copy(
+                        analyzing = false,
+                        analysisDate = null,
+                        analysisMealType = null,
+                        analysisThumbnail = null,
+                        error = it.message,
+                    )
+                },
             )
-            onComplete()
         }
     }
 
