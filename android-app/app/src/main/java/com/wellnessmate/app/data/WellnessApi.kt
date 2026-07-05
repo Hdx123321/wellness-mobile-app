@@ -126,9 +126,18 @@ interface WellnessApi {
     @POST("api/training-plans/{id}/check-ins")
     suspend fun checkInTrainingPlan(@Path("id") id: Long): TrainingPlanResponse
 
-    @GET("api/ai-advisor/messages")
-    suspend fun aiAdvisorMessages(): List<AiAdvisorMessageResponse>
+    @GET("api/ai-advisor/sessions")
+    suspend fun aiAdvisorSessions(): List<AiAdvisorSessionResponse>
 
-    @POST("api/ai-advisor/messages")
-    suspend fun sendAiAdvisorMessage(@Body request: AiAdvisorMessageRequest): AiAdvisorMessageResponse
+    @POST("api/ai-advisor/sessions")
+    suspend fun createAiAdvisorSession(): AiAdvisorSessionResponse
+
+    @DELETE("api/ai-advisor/sessions/{id}")
+    suspend fun deleteAiAdvisorSession(@Path("id") sessionId: Long)
+
+    @POST("api/ai-advisor/sessions/{id}/rename")
+    suspend fun renameAiAdvisorSession(@Path("id") sessionId: Long, @Body request: RenameSessionRequest): AiAdvisorSessionResponse
+
+    @GET("api/ai-advisor/sessions/{sessionId}/messages")
+    suspend fun aiAdvisorSessionMessages(@Path("sessionId") sessionId: Long): List<AiAdvisorMessageResponse>
 }

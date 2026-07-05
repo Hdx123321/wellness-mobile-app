@@ -2,6 +2,7 @@ package com.wellnessmate.app.ui
 
 import com.wellnessmate.app.data.AiAdvisorMessageResponse
 import com.wellnessmate.app.data.AiAdvisorRepository
+import com.wellnessmate.app.data.AiAdvisorSessionResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -26,11 +27,12 @@ class AiAdvisorViewModelTest {
 }
 
 private class FakeAiAdvisorRepository : AiAdvisorRepository {
-    override suspend fun messages() = Result.success(emptyList<AiAdvisorMessageResponse>())
-    override suspend fun send(content: String) = Result.success(
-        AiAdvisorMessageResponse(1, "ASSISTANT", "Take a short walk.", "2026-06-29T00:00:00Z"),
-    )
-    override suspend fun sendStream(content: String, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse> {
+    override suspend fun sessions() = Result.success(listOf(AiAdvisorSessionResponse(1, "Test", "", "")))
+    override suspend fun createSession() = Result.success(AiAdvisorSessionResponse(2, "New", "", ""))
+    override suspend fun deleteSession(id: Long) = Result.success(Unit)
+    override suspend fun renameSession(id: Long, title: String) = Result.success(AiAdvisorSessionResponse(1, title, "", ""))
+    override suspend fun messagesForSession(sessionId: Long) = Result.success(emptyList())
+    override suspend fun sendStreamToSession(sessionId: Long, content: String, onThinkingToken: (String) -> Unit, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse> {
         onToken("Take a short walk.")
         return Result.success(
             AiAdvisorMessageResponse(1, "ASSISTANT", "Take a short walk.", "2026-06-29T00:00:00Z"),

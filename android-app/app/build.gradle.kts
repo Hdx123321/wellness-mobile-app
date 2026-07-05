@@ -9,7 +9,6 @@ val debugApiBaseUrl = providers.gradleProperty("API_BASE_URL")
 android {
     namespace = "com.wellnessmate.app"
     compileSdk = 36
-    compileSdkMinor = 1
 
     defaultConfig {
         applicationId = "com.wellnessmate.app"
@@ -76,6 +75,7 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-moshi:3.0.0")
+    implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.27.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 
