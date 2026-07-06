@@ -1,6 +1,7 @@
 package com.wellnessmate.chat.api;
 
 import com.wellnessmate.chat.service.CoachChatService;
+import com.wellnessmate.plan.api.SubscriberResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,18 @@ public class CoachChatController {
   public CoachMessageResponse send(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id,
                                    @Valid @RequestBody CoachMessageRequest request) {
     return chat.send(userId(jwt), id, request.content());
+  }
+
+  @PostMapping("/conversations")
+  @ResponseStatus(HttpStatus.CREATED)
+  public CoachConversationResponse createConversation(@AuthenticationPrincipal Jwt jwt,
+                                                       @Valid @RequestBody CreateConversationRequest request) {
+    return chat.createConversation(userId(jwt), request);
+  }
+
+  @GetMapping("/clients")
+  public List<SubscriberResponse> availableClients(@AuthenticationPrincipal Jwt jwt) {
+    return chat.availableClients(userId(jwt));
   }
 
   private Long userId(Jwt jwt) { return Long.parseLong(jwt.getSubject()); }

@@ -175,6 +175,7 @@ public class AiAgentOrchestrator {
     List<Map<String, Object>> results = new ArrayList<>();
 
     for (ToolCall call : calls) {
+      log.info("Agent tool call: {} args={}", call.name(), call.arguments());
       // Notify client
       safeEmit(emitter, Map.of(
           "type", "tool_call",

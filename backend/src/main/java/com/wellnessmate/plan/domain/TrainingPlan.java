@@ -37,7 +37,7 @@ public class TrainingPlan {
     this.difficulty = difficulty.trim();
     this.durationWeeks = durationWeeks;
     this.summary = summary.trim();
-    this.weeklySchedule = weeklySchedule.trim();
+    this.weeklySchedule = normalize(weeklySchedule);
     this.equipment = normalize(equipment);
     this.safetyNotes = normalize(safetyNotes);
     this.videoUrl = normalize(videoUrl);
@@ -47,6 +47,18 @@ public class TrainingPlan {
   }
 
   private String normalize(String value) { return value == null || value.isBlank() ? null : value.trim(); }
+  // Setters for plan editing
+  public void setTitle(String title) { this.title = title.trim(); touch(); }
+  public void setGoal(String goal) { this.goal = goal.trim(); touch(); }
+  public void setDifficulty(String difficulty) { this.difficulty = difficulty.trim(); touch(); }
+  public void setDurationWeeks(int durationWeeks) { this.durationWeeks = durationWeeks; touch(); }
+  public void setSummary(String summary) { this.summary = summary.trim(); touch(); }
+  public void setWeeklySchedule(String weeklySchedule) { this.weeklySchedule = normalize(weeklySchedule); touch(); }
+  public void setEquipment(String equipment) { this.equipment = normalize(equipment); touch(); }
+  public void setSafetyNotes(String safetyNotes) { this.safetyNotes = normalize(safetyNotes); touch(); }
+  public void setVideoUrl(String videoUrl) { this.videoUrl = normalize(videoUrl); touch(); }
+  private void touch() { this.updatedAt = Instant.now(); }
+
   public Long getId() { return id; }
   public Long getCoachId() { return coachId; }
   public String getTitle() { return title; }

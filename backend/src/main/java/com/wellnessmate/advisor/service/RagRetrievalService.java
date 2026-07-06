@@ -170,6 +170,50 @@ public class RagRetrievalService {
       sb.append("\n");
     }
 
+    // FOOD: also query FoodEntry + FoodEntryItem for detailed nutrition
+    if (type == TrackerType.FOOD) {
+      List<FoodEntry> foods = foodEntries
+          .findByUserIdAndRecordedAtGreaterThanEqualAndRecordedAtLessThanOrderByRecordedAtDesc(
+              userId, from, now);
+      if (!foods.isEmpty()) {
+        List<Long> entryIds = foods.stream().map(FoodEntry::getId).toList();
+        List<FoodEntryItem> items = foodItems.findByFoodEntryIdInOrderById(entryIds);
+        sb.append("\nDetailed food entries:\n");
+        for (FoodEntry food : foods) {
+          List<FoodEntryItem> mealItems = items.stream()
+              .filter(i -> i.getFoodEntryId().equals(food.getId())).toList();
+          BigDecimal cal = mealItems.stream().map(FoodEntryItem::getCalories)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+          BigDecimal pro = mealItems.stream().map(FoodEntryItem::getProteinGrams)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+          BigDecimal carb = mealItems.stream().map(FoodEntryItem::getCarbohydrateGrams)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+          BigDecimal fat = mealItems.stream().map(FoodEntryItem::getFatGrams)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+          sb.append("  FoodEntry #").append(food.getId())
+              .append(" (use entry_id=").append(food.getTrackerEntryId())
+              .append(" for delete_tracker_entry)")
+              .append(" ").append(food.getRecordedAt())
+              .append(" ").append(food.getMealType())
+              .append(": ").append(cal).append("kcal");
+          if (pro.compareTo(BigDecimal.ZERO) > 0)
+            sb.append(", P:").append(pro).append("g");
+          if (carb.compareTo(BigDecimal.ZERO) > 0)
+            sb.append(", C:").append(carb).append("g");
+          if (fat.compareTo(BigDecimal.ZERO) > 0)
+            sb.append(", F:").append(fat).append("g");
+          sb.append(" [");
+          sb.append(mealItems.stream()
+              .map(i -> i.getFoodName() + " " + i.getCalories() + "kcal")
+              .collect(Collectors.joining(", ")));
+          sb.append("]");
+          if (food.getNotes() != null && !food.getNotes().isBlank())
+            sb.append(" (").append(food.getNotes()).append(")");
+          sb.append("\n");
+        }
+      }
+    }
+
     return sb.toString();
   }
 

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.wellnessmate.app.data.CoachChatRepository
 import com.wellnessmate.app.data.CoachConversationResponse
 import com.wellnessmate.app.data.CoachMessageResponse
+import com.wellnessmate.app.data.SubscriberResponse
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ data class CoachChatUiState(
     val conversations: List<CoachConversationResponse> = emptyList(),
     val selectedConversationId: Long? = null,
     val messages: List<CoachMessageResponse> = emptyList(),
+    val availableClients: List<SubscriberResponse> = emptyList(),
     val error: String? = null,
 )
 
@@ -56,9 +58,34 @@ class CoachChatViewModel(private val repository: CoachChatRepository) : ViewMode
         }
     }
 
+    fun refreshClients() {
+        viewModelScope.launch {
+            repository.clients().fold(
+                onSuccess = { _state.value = _state.value.copy(availableClients = it) },
+                onFailure = { _state.value = _state.value.copy(error = it.message) },
+            )
+        }
+    }
+
     fun selectConversation(id: Long) {
         _state.value = _state.value.copy(selectedConversationId = id, messages = emptyList())
         refreshMessages(silent = false)
+    }
+
+    fun createConversation(clientId: Long, subject: String?) {
+        viewModelScope.launch {
+            repository.createConversation(clientId, subject).fold(
+                onSuccess = { conversation ->
+                    _state.value = _state.value.copy(
+                        conversations = (_state.value.conversations + conversation).distinctBy { it.id },
+                        selectedConversationId = conversation.id,
+                        messages = emptyList(),
+                    )
+                    refreshMessages(silent = false)
+                },
+                onFailure = { _state.value = _state.value.copy(error = it.message) },
+            )
+        }
     }
 
     fun refreshMessages(silent: Boolean = false) {

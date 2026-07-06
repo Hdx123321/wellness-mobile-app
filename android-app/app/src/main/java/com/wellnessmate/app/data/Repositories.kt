@@ -178,6 +178,8 @@ interface CoachChatRepository {
     suspend fun conversations(): Result<List<CoachConversationResponse>>
     suspend fun messages(conversationId: Long, afterId: Long): Result<List<CoachMessageResponse>>
     suspend fun send(conversationId: Long, content: String): Result<CoachMessageResponse>
+    suspend fun createConversation(clientId: Long, subject: String?): Result<CoachConversationResponse>
+    suspend fun clients(): Result<List<SubscriberResponse>>
 }
 
 class NetworkCoachChatRepository(private val api: WellnessApi) : CoachChatRepository {
@@ -188,18 +190,39 @@ class NetworkCoachChatRepository(private val api: WellnessApi) : CoachChatReposi
     override suspend fun send(conversationId: Long, content: String) = apiResult {
         api.sendCoachMessage(conversationId, CoachMessageRequest(content.trim()))
     }
+    override suspend fun createConversation(clientId: Long, subject: String?) = apiResult {
+        api.createCoachConversation(CreateConversationRequest(clientId, subject))
+    }
+    override suspend fun clients() = apiResult { api.coachClients() }
 }
 
 interface TrainingPlanRepository {
     suspend fun plans(): Result<List<TrainingPlanResponse>>
     suspend fun create(request: TrainingPlanRequest): Result<TrainingPlanResponse>
+    suspend fun update(id: Long, request: TrainingPlanRequest): Result<TrainingPlanResponse>
+    suspend fun delete(id: Long): Result<Unit>
     suspend fun checkIn(id: Long): Result<TrainingPlanResponse>
+    suspend fun subscribe(id: Long): Result<TrainingPlanResponse>
+    suspend fun unsubscribe(id: Long): Result<Unit>
+    suspend fun subscribers(planId: Long): Result<List<SubscriberResponse>>
+    suspend fun uploadFile(bytes: ByteArray, contentType: String, filename: String): Result<FileUploadResponse>
 }
 
 class NetworkTrainingPlanRepository(private val api: WellnessApi) : TrainingPlanRepository {
     override suspend fun plans() = apiResult { api.trainingPlans() }
     override suspend fun create(request: TrainingPlanRequest) = apiResult { api.createTrainingPlan(request) }
+    override suspend fun update(id: Long, request: TrainingPlanRequest) = apiResult { api.updateTrainingPlan(id, request) }
+    override suspend fun delete(id: Long) = apiResult { api.deleteTrainingPlan(id) }
     override suspend fun checkIn(id: Long) = apiResult { api.checkInTrainingPlan(id) }
+    override suspend fun subscribe(id: Long) = apiResult { api.subscribeTrainingPlan(id) }
+    override suspend fun unsubscribe(id: Long) = apiResult { api.unsubscribeTrainingPlan(id) }
+    override suspend fun subscribers(planId: Long) = apiResult { api.trainingPlanSubscribers(planId) }
+    override suspend fun uploadFile(bytes: ByteArray, contentType: String, filename: String) = apiResult {
+        val mediaType = try { contentType.toMediaType() } catch (_: Exception) { "application/octet-stream".toMediaType() }
+        val body = bytes.toRequestBody(mediaType)
+        val part = MultipartBody.Part.createFormData("file", filename, body)
+        api.uploadFile(part)
+    }
 }
 
 interface AiAdvisorRepository {

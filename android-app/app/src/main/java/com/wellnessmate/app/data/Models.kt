@@ -232,10 +232,18 @@ data class FoodAnalysisResponse(
 
 data class CoachConversationResponse(
     val id: Long,
+    val clientId: Long,
     val clientName: String,
+    val coachId: Long,
     val coachName: String,
+    val subject: String?,
     val lastMessage: String?,
     val updatedAt: String,
+)
+
+data class CreateConversationRequest(
+    val clientId: Long,
+    val subject: String?,
 )
 
 data class CoachMessageRequest(val content: String)
@@ -255,10 +263,39 @@ data class TrainingPlanRequest(
     val difficulty: String,
     val durationWeeks: Int,
     val summary: String,
-    val weeklySchedule: String,
+    val weeklySchedule: String?,
     val equipment: String?,
     val safetyNotes: String?,
     val videoUrl: String?,
+    val blocks: List<WorkoutBlockRequest>,
+)
+
+data class WorkoutBlockRequest(
+    val title: String,
+    val content: String?,
+    val imageUrl: String?,
+    val videoUrl: String?,
+)
+
+data class WorkoutBlockResponse(
+    val id: Long,
+    val sortOrder: Int,
+    val title: String,
+    val content: String?,
+    val imageUrl: String?,
+    val videoUrl: String?,
+)
+
+data class SubscriberResponse(
+    val id: Long,
+    val username: String,
+    val displayName: String?,
+    val subscribedAt: String?,
+)
+
+data class FileUploadResponse(
+    val id: Long,
+    val url: String,
 )
 
 data class TrainingPlanResponse(
@@ -270,12 +307,14 @@ data class TrainingPlanResponse(
     val difficulty: String,
     val durationWeeks: Int,
     val summary: String,
-    val weeklySchedule: String,
+    val weeklySchedule: String?,
     val equipment: String?,
     val safetyNotes: String?,
     val videoUrl: String?,
+    val blocks: List<WorkoutBlockResponse>?,
     val checkInCount: Long,
     val checkedInToday: Boolean,
+    val subscribed: Boolean,
     val createdAt: String,
 )
 

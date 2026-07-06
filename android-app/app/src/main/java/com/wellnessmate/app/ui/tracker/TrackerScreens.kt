@@ -144,7 +144,7 @@ fun MainTrackerNav(
 
     Scaffold(
         topBar = {
-            if (route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT) TopAppBar(
+            if (route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR) TopAppBar(
                 title = {
                     Surface(
                         shape = CircleShape,
@@ -206,6 +206,7 @@ fun MainTrackerNav(
             }
             composable(ADVISOR) { AiAdvisorScreen(aiAdvisorViewModel) }
             composable(PLANS) {
+                LaunchedEffect(Unit) { trainingPlanViewModel.refresh() }
                 TrainingPlanScreen(user, trainingPlanViewModel) { navController.navigate(COACH) }
             }
             composable(COACH) {
@@ -275,6 +276,7 @@ fun MainTrackerNav(
                 )
             }
             composable(FOOD) {
+                LaunchedEffect(Unit) { foodViewModel.loadDate(selectedDate) }
                 FoodTrackerScreen(
                     viewModel = foodViewModel,
                     selectedDate = selectedDate,
