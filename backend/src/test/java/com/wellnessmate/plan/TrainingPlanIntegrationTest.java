@@ -49,6 +49,8 @@ class TrainingPlanIntegrationTest {
 
     mockMvc.perform(get("/api/training-plans").header("Authorization", bearer(client)))
         .andExpect(status().isOk()).andExpect(jsonPath("$[0].title").value("Four-week foundation"));
+    mockMvc.perform(post("/api/training-plans/{id}/subscribe", id).header("Authorization", bearer(client)))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.subscribed").value(true));
     mockMvc.perform(post("/api/training-plans/{id}/check-ins", id).header("Authorization", bearer(client)))
         .andExpect(status().isOk()).andExpect(jsonPath("$.checkedInToday").value(true))
         .andExpect(jsonPath("$.checkInCount").value(1));
@@ -61,7 +63,8 @@ class TrainingPlanIntegrationTest {
       "durationWeeks", 4, "summary", "Three balanced sessions per week.",
       "weeklySchedule", "Mon - strength\nWed - walk\nFri - mobility",
       "equipment", "Mat", "safetyNotes", "Stop if pain occurs",
-      "videoUrl", "https://example.com/workout.mp4")); }
+      "videoUrl", "https://example.com/workout.mp4",
+      "blocks", java.util.List.of(Map.of("title", "Foundation session", "content", "Warm up, train, cool down")))); }
   private String register(String username) throws Exception {
     String response = mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(Map.of("username", username, "email", username + "@example.com",

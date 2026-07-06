@@ -244,28 +244,57 @@ fun MainTrackerNav(
                 arguments = listOf(navArgument("type") { type = NavType.StringType }),
             ) { entry ->
                 val trackerType = entry.arguments?.getString("type") ?: "WATER"
-                if (trackerType == "WORKOUT") {
-                    WorkoutTrackerScreen(
-                        viewModel = viewModel,
-                        healthProfileViewModel = healthProfileViewModel,
-                        selectedDate = selectedDate,
-                        onAddWorkout = { navController.navigate("workout-select/$selectedDate") },
-                        onBack = { navController.popBackStack() },
-                    )
-                } else {
-                    TrackerDetailScreen(
-                        type = trackerType,
-                        viewModel = viewModel,
-                        healthProfileViewModel = healthProfileViewModel,
-                        selectedDate = selectedDate,
-                        onEdit = { navController.navigate("form/${it.type}/${it.id}") },
-                        onAdd = { navController.navigate("form/$it/-1") },
-                        onBack = {
-                            if (trackerType == "WEIGHT") healthProfileViewModel.refresh()
-                            navController.popBackStack()
-                        },
-                        onWeightTrends = { navController.navigate(WEIGHT_TRENDS) },
-                    )
+                when (trackerType) {
+                    "WORKOUT" -> {
+                        WorkoutTrackerScreen(
+                            viewModel = viewModel,
+                            healthProfileViewModel = healthProfileViewModel,
+                            selectedDate = selectedDate,
+                            onAddWorkout = { navController.navigate("workout-select/$selectedDate") },
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                    "STEPS" -> {
+                        StepsTrackerScreen(
+                            viewModel = viewModel,
+                            selectedDate = selectedDate,
+                            onAdd = { navController.navigate("form/$it/-1") },
+                            onEdit = { navController.navigate("form/${it.type}/${it.id}") },
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                    "WATER" -> {
+                        WaterTrackerScreen(
+                            viewModel = viewModel,
+                            selectedDate = selectedDate,
+                            onEdit = { navController.navigate("form/${it.type}/${it.id}") },
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                    "SLEEP" -> {
+                        SleepTrackerScreen(
+                            viewModel = viewModel,
+                            selectedDate = selectedDate,
+                            onAdd = { navController.navigate("form/$it/-1") },
+                            onEdit = { navController.navigate("form/${it.type}/${it.id}") },
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                    else -> {
+                        TrackerDetailScreen(
+                            type = trackerType,
+                            viewModel = viewModel,
+                            healthProfileViewModel = healthProfileViewModel,
+                            selectedDate = selectedDate,
+                            onEdit = { navController.navigate("form/${it.type}/${it.id}") },
+                            onAdd = { navController.navigate("form/$it/-1") },
+                            onBack = {
+                                if (trackerType == "WEIGHT") healthProfileViewModel.refresh()
+                                navController.popBackStack()
+                            },
+                            onWeightTrends = { navController.navigate(WEIGHT_TRENDS) },
+                        )
+                    }
                 }
             }
             composable(WEIGHT_TRENDS) {
