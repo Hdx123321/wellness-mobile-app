@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AiChatMessageRepository extends JpaRepository<AiChatMessage, Long> {
   List<AiChatMessage> findTop100BySessionIdOrderByIdAsc(Long sessionId);
+  void deleteBySessionId(Long sessionId);
 }

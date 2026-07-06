@@ -203,9 +203,12 @@ class NetworkTrainingPlanRepository(private val api: WellnessApi) : TrainingPlan
 }
 
 interface AiAdvisorRepository {
-    suspend fun messages(): Result<List<AiAdvisorMessageResponse>>
-    suspend fun send(content: String): Result<AiAdvisorMessageResponse>
-    suspend fun sendStream(content: String, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse>
+    suspend fun sessions(): Result<List<AiAdvisorSessionResponse>>
+    suspend fun createSession(): Result<AiAdvisorSessionResponse>
+    suspend fun deleteSession(id: Long): Result<Unit>
+    suspend fun renameSession(id: Long, title: String): Result<AiAdvisorSessionResponse>
+    suspend fun messagesForSession(sessionId: Long): Result<List<AiAdvisorMessageResponse>>
+    suspend fun sendStreamToSession(sessionId: Long, content: String, onThinkingToken: (String) -> Unit, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse>
 }
 
 class NetworkAiAdvisorRepository(
@@ -214,12 +217,17 @@ class NetworkAiAdvisorRepository(
     private val baseUrl: String,
     private val tokenStore: TokenStore,
 ) : AiAdvisorRepository {
-    override suspend fun messages() = apiResult { api.aiAdvisorMessages() }
-    override suspend fun send(content: String) = apiResult {
-        api.sendAiAdvisorMessage(AiAdvisorMessageRequest(content.trim()))
+    override suspend fun sessions() = apiResult { api.aiAdvisorSessions() }
+    override suspend fun createSession() = apiResult { api.createAiAdvisorSession() }
+    override suspend fun deleteSession(id: Long) = apiResult { api.deleteAiAdvisorSession(id); Unit }
+    override suspend fun renameSession(id: Long, title: String) = apiResult {
+        api.renameAiAdvisorSession(id, RenameSessionRequest(title.trim()))
+    }
+    override suspend fun messagesForSession(sessionId: Long) = apiResult {
+        api.aiAdvisorSessionMessages(sessionId)
     }
 
-    override suspend fun sendStream(content: String, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse> {
+    override suspend fun sendStreamToSession(sessionId: Long, content: String, onThinkingToken: (String) -> Unit, onToken: (String) -> Unit): Result<AiAdvisorMessageResponse> {
         return withContext(Dispatchers.IO) {
             try {
                 val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
@@ -227,7 +235,7 @@ class NetworkAiAdvisorRepository(
                     .toJson(AiAdvisorMessageRequest(content.trim()))
                 val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
                 val requestBuilder = okhttp3.Request.Builder()
-                    .url("${baseUrl}api/ai-advisor/messages/stream")
+                    .url("${baseUrl}api/ai-advisor/sessions/$sessionId/messages/stream")
                     .post(requestBody)
                 tokenStore.token()?.let { requestBuilder.header("Authorization", "Bearer $it") }
                 val response = okHttpClient.newCall(requestBuilder.build()).execute()
@@ -251,32 +259,62 @@ class NetworkAiAdvisorRepository(
                 var messageId = -1L
                 var createdAt = ""
                 val fullText = StringBuilder()
+                var isThinking = false
 
                 while (!source.exhausted()) {
                     val line = source.readUtf8Line() ?: break
-                    // SSE format: "data:value" or "data: value" — strip prefix
-                    val data = when {
-                        line.startsWith("data:") -> line.substring(5).trimStart()
-                        else -> continue
-                    }
+                    val data = line.removePrefix("data:")
                     if (data.isEmpty()) continue
-                    // Try JSON parse — done event has {"type":"done",...}
-                    val done = try {
+
+                    // Try structured event first (JSON with "type" field)
+                    val event = try {
                         moshi.adapter(Map::class.java).fromJson(data) as? Map<*, *>
                     } catch (_: Exception) { null }
-                    if (done != null && done["type"] == "done") {
-                        messageId = (done["messageId"] as? Number)?.toLong() ?: -1L
-                        createdAt = done["createdAt"]?.toString() ?: ""
-                        break
+
+                    if (event != null) {
+                        when (event["type"]) {
+                            "done" -> {
+                                messageId = (event["messageId"] as? Number)?.toLong() ?: -1L
+                                createdAt = event["createdAt"]?.toString() ?: ""
+                                break
+                            }
+                            "error" -> {
+                                val msg = event["message"]?.toString() ?: "Something went wrong."
+                                return@withContext Result.failure(ApiFailure(msg))
+                            }
+                            "thinking_start" -> {
+                                isThinking = true
+                                continue
+                            }
+                            "thinking_end" -> {
+                                isThinking = false
+                                continue
+                            }
+                            "tool_call", "tool_result" -> {
+                                // Transient status events — skip
+                                continue
+                            }
+                            else -> {
+                                // Unknown structured event — treat as text
+                                if (isThinking) onThinkingToken(data)
+                                else {
+                                    fullText.append(data)
+                                    onToken(data)
+                                }
+                            }
+                        }
+                    } else {
+                        // Plain text token — route based on thinking state
+                        if (isThinking) onThinkingToken(data)
+                        else {
+                            fullText.append(data)
+                            onToken(data)
+                        }
                     }
-                    // Plain token
-                    fullText.append(data)
-                    onToken(data)
                 }
                 response.close()
 
                 if (messageId == -1L) {
-                    // Stream completed but no done event — create a synthetic response
                     messageId = -System.currentTimeMillis()
                     createdAt = ""
                 }

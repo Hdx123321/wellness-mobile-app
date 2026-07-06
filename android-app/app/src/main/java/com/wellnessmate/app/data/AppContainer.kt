@@ -18,10 +18,10 @@ class AppContainer(context: Context) {
 
     init {
         okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(90, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.MINUTES)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(10, TimeUnit.MINUTES)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder().apply {
                     tokenStore.token()?.let { header("Authorization", "Bearer $it") }

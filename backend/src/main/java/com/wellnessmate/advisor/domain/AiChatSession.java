@@ -32,6 +32,10 @@ public class AiChatSession {
   }
 
   public void touch(Instant time) { updatedAt = time; }
+  public void setTitle(String title) { this.title = title; }
   public Long getId() { return id; }
   public Long getUserId() { return userId; }
+  public String getTitle() { return title; }
+  public Instant getCreatedAt() { return createdAt; }
+  public Instant getUpdatedAt() { return updatedAt; }
 }

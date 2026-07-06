@@ -287,3 +287,12 @@ data class AiAdvisorMessageResponse(
     val content: String,
     val createdAt: String,
 )
+
+data class AiAdvisorSessionResponse(
+    val id: Long,
+    val title: String,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+data class RenameSessionRequest(val title: String)

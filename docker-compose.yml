@@ -31,6 +31,10 @@ services:
       FOOD_LLM_API_BASE_URL: ${FOOD_LLM_API_BASE_URL:-}
       FOOD_LLM_API_KEY: ${FOOD_LLM_API_KEY:-}
       FOOD_LLM_MODEL: ${FOOD_LLM_MODEL:-}
+      EMBEDDING_API_BASE_URL: ${EMBEDDING_API_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-}
     depends_on:
       mysql:
         condition: service_healthy
