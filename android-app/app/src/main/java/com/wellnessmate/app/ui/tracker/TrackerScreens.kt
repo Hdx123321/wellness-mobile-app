@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -50,10 +53,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -144,15 +148,22 @@ fun MainTrackerNav(
 
     Scaffold(
         topBar = {
-            if (route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR) TopAppBar(
+            if (route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR
+                && route != USER_MANAGEMENT && route != REMINDER && route != HEALTH_PROFILE && route != HEIGHT_PICKER) TopAppBar(
                 title = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(44.dp).clickable { navController.navigate(USER_MANAGEMENT) },
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text((user.displayName ?: user.username).take(1).uppercase())
+                    IconButton(onClick = { navController.navigate(USER_MANAGEMENT) }) {
+                        Surface(
+                            modifier = Modifier.size(32.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = (user.displayName ?: user.username).take(1).uppercase(),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            }
                         }
                     }
                 },
@@ -170,12 +181,37 @@ fun MainTrackerNav(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     if (user.role == "COACH") {
-                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) { Text("Plans") }
-                        TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) { Text("Messages") }
+                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Text("Plans", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_message), "Messages", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Text("Messages", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     } else {
-                        TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) { Text("Home") }
-                        TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) { Text("AI Advisor") }
-                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) { Text("Plans") }
+                        TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_home), "Home", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Text("Home", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_cube), "AI Advisor", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Text("AI Advisor", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Text("Plans", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     }
                 }
             }
@@ -530,6 +566,8 @@ private fun HomeScreen(
         }
         item {
             TextButton(onClick = viewModel::refresh, modifier = Modifier.fillMaxWidth()) {
+                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_refresh), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.refresh))
             }
         }
@@ -556,7 +594,10 @@ private fun HomeScreen(
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("${trackerIcon(type.type)}  ${typeLabel(type.type)}  ${if (selected) "✓" else "+"}")
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(painterResource(trackerIconRes(type.type)), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                Text("${typeLabel(type.type)}  ${if (selected) "✓" else "+"}")
+                            }
                         }
                     }
                 }
@@ -582,7 +623,7 @@ private fun OptionalTrackerCard(
             modifier = Modifier.fillMaxSize().padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(trackerIcon(type.type), style = MaterialTheme.typography.headlineMedium)
+            Icon(painterResource(trackerIconRes(type.type)), null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
             Column {
                 Text(typeLabel(type.type), style = MaterialTheme.typography.titleSmall)
                 Text(
@@ -613,10 +654,16 @@ private fun FoodHomeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
-                    Text("${trackerIcon("FOOD")} Food", style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_food), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Food", style = MaterialTheme.typography.titleMedium)
+                    }
                     Text("${formatAmount(calories)} kcal")
                 }
-                TextButton(onClick = onOpen) { Text("View") }
+                IconButton(onClick = onOpen) {
+                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -673,7 +720,11 @@ private fun WeightHomeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
-                    Text("${trackerIcon("WEIGHT")} Weight", style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_weight), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Weight", style = MaterialTheme.typography.titleMedium)
+                    }
                     Text(weight?.let { "${formatAmount(it)} $unit" } ?: "No data")
                     updatedAt?.let {
                         Text(
@@ -683,7 +734,9 @@ private fun WeightHomeCard(
                         )
                     }
                 }
-                Text("View")
+                IconButton(onClick = onOpen) {
+                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                }
             }
             MiniWeightLineChart(trend, modifier = Modifier.padding(top = 8.dp))
         }
@@ -706,8 +759,14 @@ private fun WorkoutHomeCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("${trackerIcon("WORKOUT")} Workout", style = MaterialTheme.typography.titleMedium)
-                Text("View")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_workout), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Workout", style = MaterialTheme.typography.titleMedium)
+                }
+                IconButton(onClick = onOpen) {
+                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -776,12 +835,12 @@ private fun TrackerDetailScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "${trackerIcon(type)} ${typeLabel(type)}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = onBack) { Text("Back") }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(painterResource(trackerIconRes(type)), null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(6.dp))
+                    Text(typeLabel(type), style = MaterialTheme.typography.headlineMedium)
+                }
+                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
             ErrorBanner(state.error, viewModel::clearError)
         }
@@ -1330,7 +1389,7 @@ private fun WeightTrendsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Weight Trends", style = MaterialTheme.typography.headlineMedium)
-                TextButton(onClick = onBack) { Text("Back") }
+                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
         }
 
@@ -1487,13 +1546,17 @@ private fun TrackerFormScreen(
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
     ) {
-        Text(
-            stringResource(
-                if (id == null) R.string.add_tracker_title else R.string.edit_tracker_title,
-                "${trackerIcon(type)} ${typeLabel(type)}",
-            ),
-            style = MaterialTheme.typography.headlineMedium,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(trackerIconRes(type)), null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                stringResource(
+                    if (id == null) R.string.add_tracker_title else R.string.edit_tracker_title,
+                    typeLabel(type),
+                ),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+        }
         OutlinedTextField(
             value = amount,
             onValueChange = { amount = it },
@@ -1586,17 +1649,17 @@ fun ErrorBanner(error: String?, dismiss: () -> Unit) {
 
 private val PRIMARY_TRACKERS = listOf("FOOD", "WEIGHT", "WORKOUT")
 
-private fun trackerIcon(type: String): String = when (type) {
-    "FOOD" -> "🍽️"
-    "WEIGHT" -> "⚖️"
-    "WORKOUT" -> "🏃"
-    "STEPS" -> "👟"
-    "SLEEP" -> "🌙"
-    "WATER" -> "💧"
-    "MEDICINE" -> "💊"
-    "HEART_RATE" -> "♥️"
-    "BLOOD_GLUCOSE" -> "🩸"
-    else -> "●"
+private fun trackerIconRes(type: String): Int = when (type) {
+    "FOOD" -> com.wellnessmate.app.R.drawable.ic_food
+    "WEIGHT" -> com.wellnessmate.app.R.drawable.ic_weight
+    "WORKOUT" -> com.wellnessmate.app.R.drawable.ic_workout
+    "STEPS" -> com.wellnessmate.app.R.drawable.ic_steps
+    "SLEEP" -> com.wellnessmate.app.R.drawable.ic_sleep
+    "WATER" -> com.wellnessmate.app.R.drawable.ic_water
+    "MEDICINE" -> com.wellnessmate.app.R.drawable.ic_medicine
+    "HEART_RATE" -> com.wellnessmate.app.R.drawable.ic_heart_rate
+    "BLOOD_GLUCOSE" -> com.wellnessmate.app.R.drawable.ic_medicine
+    else -> com.wellnessmate.app.R.drawable.ic_more
 }
 
 private fun typeLabel(type: String): String = type.lowercase().split('_')

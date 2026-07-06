@@ -232,20 +232,32 @@ fun MiniWeightLineChart(
     val lineColor = Color(0xFF4A90D9)
     val minimum = data.minOf { it.second }
     val range = (data.maxOf { it.second } - minimum).coerceAtLeast(1.0)
-    Canvas(modifier = modifier.fillMaxWidth().height(56.dp)) {
-        val step = if (data.size > 1) size.width / (data.size - 1) else 0f
-        val path = Path()
-        val points = mutableListOf<Offset>()
-        data.forEachIndexed { index, (_, value) ->
-            val x = if (data.size == 1) size.width / 2f else index * step
-            val y = size.height - ((value - minimum) / range * size.height * 0.75 + size.height * 0.125).toFloat()
-            points += Offset(x, y)
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    Column(modifier = modifier.fillMaxWidth()) {
+        Canvas(modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            val step = if (data.size > 1) size.width / (data.size - 1) else 0f
+            val path = Path()
+            val points = mutableListOf<Offset>()
+            data.forEachIndexed { index, (_, value) ->
+                val x = if (data.size == 1) size.width / 2f else index * step
+                val y = size.height - ((value - minimum) / range * size.height * 0.80 + size.height * 0.10).toFloat()
+                points += Offset(x, y)
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            drawPath(path, lineColor, style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            points.forEach { point ->
+                drawCircle(Color.White, radius = 7f, center = point)
+                drawCircle(lineColor, radius = 5f, center = point)
+            }
         }
-        drawPath(path, lineColor, style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        points.forEach { point ->
-            drawCircle(Color.White, radius = 9f, center = point)
-            drawCircle(lineColor, radius = 6f, center = point)
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
+            data.forEach { (date, _) ->
+                Text(
+                    "${date.monthValue}/${date.dayOfMonth}",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
         }
     }
 }
