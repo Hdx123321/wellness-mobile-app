@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CoachConversationRepository extends JpaRepository<CoachConversation, Long> {
-  Optional<CoachConversation> findByClientId(Long clientId);
+  Optional<CoachConversation> findByClientIdAndCoachId(Long clientId, Long coachId);
+  List<CoachConversation> findByClientId(Long clientId);
   List<CoachConversation> findByCoachIdOrderByUpdatedAtDesc(Long coachId);
 }

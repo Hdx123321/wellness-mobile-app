@@ -86,6 +86,15 @@ class UpdateTrackerEntryTool implements Tool {
       return "Error: entry #" + entryId + " not found or not accessible. " + e.getMessage();
     }
 
+    // Food entries have item-level nutrition data — updating them requires
+    // re-creating the full entry. Guide the LLM to use delete + create_food_entry.
+    if (current.type() == TrackerType.FOOD) {
+      return "Error: Food entries cannot be updated in-place because they contain "
+          + "item-level nutrition details. To modify a food entry, confirm with the user, "
+          + "then call delete_tracker_entry to remove the old entry and create_food_entry "
+          + "to create a new one with the correct values.";
+    }
+
     BigDecimal amount = args.has("amount") && !args.path("amount").isNull()
         ? new BigDecimal(args.path("amount").asText()).setScale(2, RoundingMode.HALF_UP)
         : current.amount();

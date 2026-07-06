@@ -117,14 +117,42 @@ interface WellnessApi {
         @Body request: CoachMessageRequest,
     ): CoachMessageResponse
 
+    @POST("api/coach-chat/conversations")
+    suspend fun createCoachConversation(@Body request: CreateConversationRequest): CoachConversationResponse
+
+    @GET("api/coach-chat/clients")
+    suspend fun coachClients(): List<SubscriberResponse>
+
+    @Multipart
+    @POST("api/files/upload")
+    suspend fun uploadFile(@Part file: MultipartBody.Part): FileUploadResponse
+
     @GET("api/training-plans")
     suspend fun trainingPlans(): List<TrainingPlanResponse>
 
     @POST("api/training-plans")
     suspend fun createTrainingPlan(@Body request: TrainingPlanRequest): TrainingPlanResponse
 
+    @PUT("api/training-plans/{id}")
+    suspend fun updateTrainingPlan(@Path("id") id: Long, @Body request: TrainingPlanRequest): TrainingPlanResponse
+
+    @DELETE("api/training-plans/{id}")
+    suspend fun deleteTrainingPlan(@Path("id") id: Long)
+
     @POST("api/training-plans/{id}/check-ins")
     suspend fun checkInTrainingPlan(@Path("id") id: Long): TrainingPlanResponse
+
+    @POST("api/training-plans/{id}/subscribe")
+    suspend fun subscribeTrainingPlan(@Path("id") id: Long): TrainingPlanResponse
+
+    @DELETE("api/training-plans/{id}/subscribe")
+    suspend fun unsubscribeTrainingPlan(@Path("id") id: Long)
+
+    @GET("api/training-plans/subscribed")
+    suspend fun subscribedTrainingPlans(): List<TrainingPlanResponse>
+
+    @GET("api/training-plans/{id}/subscribers")
+    suspend fun trainingPlanSubscribers(@Path("id") id: Long): List<SubscriberResponse>
 
     @GET("api/ai-advisor/sessions")
     suspend fun aiAdvisorSessions(): List<AiAdvisorSessionResponse>

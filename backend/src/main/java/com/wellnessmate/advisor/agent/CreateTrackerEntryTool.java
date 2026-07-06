@@ -33,7 +33,9 @@ class CreateTrackerEntryTool implements Tool {
 
   @Override
   public String description() {
-    return "Create a new tracker entry. Use this when the user wants to record or log a value. "
+    return "Create a new health tracker entry. Use this for health metrics like weight, sleep, "
+        + "steps, workout, water, medicine, heart rate, blood glucose. "
+        + "For food/meal logging, use create_food_entry instead (this tool cannot create food entries). "
         + "Always confirm the type, amount, and date before calling.";
   }
 
@@ -44,7 +46,7 @@ class CreateTrackerEntryTool implements Tool {
 
     Map<String, Object> trackerType = new LinkedHashMap<>();
     trackerType.put("type", "string");
-    trackerType.put("description", "The tracker type");
+    trackerType.put("description", "The tracker type (NOT for food/meals — use create_food_entry for that)");
     trackerType.put("enum", List.of(
         "WEIGHT", "SLEEP", "STEPS", "WORKOUT", "WATER",
         "MEDICINE", "HEART_RATE", "BLOOD_GLUCOSE"));

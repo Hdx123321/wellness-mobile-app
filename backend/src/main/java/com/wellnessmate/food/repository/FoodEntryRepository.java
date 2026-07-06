@@ -11,4 +11,6 @@ public interface FoodEntryRepository extends JpaRepository<FoodEntry, Long> {
       Long userId, Instant from, Instant to);
 
   Optional<FoodEntry> findByIdAndUserId(Long id, Long userId);
+
+  Optional<FoodEntry> findByTrackerEntryId(Long trackerEntryId);
 }

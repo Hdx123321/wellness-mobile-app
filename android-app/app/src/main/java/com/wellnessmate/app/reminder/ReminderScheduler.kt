@@ -17,7 +17,13 @@ import com.wellnessmate.app.MainActivity
 import com.wellnessmate.app.R
 import java.util.Calendar
 
-data class ReminderSettings(val enabled: Boolean, val hour: Int, val minute: Int)
+data class ReminderSettings(
+    val enabled: Boolean,
+    val hour: Int,
+    val minute: Int,
+    val title: String = "WellnessMate daily check-in",
+    val content: String = "Review today's trackers and record anything missing.",
+)
 
 object ReminderScheduler {
     private const val PREFS = "daily-reminder"
@@ -29,6 +35,8 @@ object ReminderScheduler {
             enabled = prefs.getBoolean("enabled", false),
             hour = prefs.getInt("hour", 20),
             minute = prefs.getInt("minute", 0),
+            title = prefs.getString("title", "WellnessMate daily check-in") ?: "WellnessMate daily check-in",
+            content = prefs.getString("content", "Review today's trackers and record anything missing.") ?: "Review today's trackers and record anything missing.",
         )
     }
 
@@ -37,6 +45,8 @@ object ReminderScheduler {
             .putBoolean("enabled", settings.enabled)
             .putInt("hour", settings.hour)
             .putInt("minute", settings.minute)
+            .putString("title", settings.title)
+            .putString("content", settings.content)
             .apply()
         if (settings.enabled) schedule(context, settings) else cancel(context)
     }
@@ -88,10 +98,11 @@ class ReminderReceiver : BroadcastReceiver() {
             context, 0, Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val s = ReminderScheduler.settings(context)
         val notification = NotificationCompat.Builder(context, "daily-wellness")
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("WellnessMate daily check-in")
-            .setContentText("Review today's trackers and record anything missing.")
+            .setContentTitle(s.title)
+            .setContentText(s.content)
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .build()

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,19 +27,60 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.wellnessmate.app.data.SessionUser
 import com.wellnessmate.app.ui.CoachChatViewModel
+import com.wellnessmate.app.ui.components.WellnessIconButton
 
 @Composable
 fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
     val state by viewModel.state.collectAsState()
     val selected = state.conversations.firstOrNull { it.id == state.selectedConversationId }
     var draft by rememberSaveable { mutableStateOf("") }
+    var showNewChatDialog by rememberSaveable { mutableStateOf(false) }
+
+    // New chat dialog for coaches
+    if (showNewChatDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewChatDialog = false },
+            title = { Text("New conversation") },
+            text = {
+                if (state.availableClients.isEmpty()) {
+                    Column {
+                        Text("No clients available.")
+                        TextButton(onClick = { viewModel.refreshClients() }) { Text("Refresh") }
+                    }
+                } else {
+                    LazyColumn {
+                        items(state.availableClients, key = { it.id }) { client ->
+                            TextButton(onClick = {
+                                viewModel.createConversation(client.id, null)
+                                showNewChatDialog = false
+                            }, modifier = Modifier.fillMaxWidth()) {
+                                Text(client.displayName ?: client.username)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showNewChatDialog = false }) { Text("Close") } },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Coach chat", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            if (user.role == "COACH") "Your clients" else selected?.let { "Your coach: ${it.coachName}" } ?: "No coach assigned yet",
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Coach chat", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    if (user.role == "COACH") selected?.let { "Chat with ${it.clientName}" } ?: "Your clients"
+                    else selected?.let { "Your coach: ${it.coachName}" } ?: "No coach assigned yet",
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+            if (user.role == "COACH") {
+                WellnessIconButton("+", "New conversation", onClick = {
+                    viewModel.refreshClients()
+                    showNewChatDialog = true
+                })
+            }
+        }
         state.error?.let {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
@@ -59,7 +101,7 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     state.conversations.forEach { conversation ->
                         TextButton(onClick = { viewModel.selectConversation(conversation.id) }) {
-                            Text(conversation.clientName)
+                            Text(conversation.subject ?: conversation.clientName)
                         }
                     }
                 }

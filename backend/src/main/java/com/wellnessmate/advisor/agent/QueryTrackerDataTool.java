@@ -41,7 +41,7 @@ class QueryTrackerDataTool implements Tool {
     trackerType.put("description", "The tracker type to query");
     trackerType.put("enum", List.of(
         "WEIGHT", "SLEEP", "STEPS", "WORKOUT", "WATER",
-        "MEDICINE", "HEART_RATE", "BLOOD_GLUCOSE"));
+        "MEDICINE", "HEART_RATE", "BLOOD_GLUCOSE", "FOOD"));
 
     Map<String, Object> days = new LinkedHashMap<>();
     days.put("type", "integer");

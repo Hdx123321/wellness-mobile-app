@@ -1,0 +1,50 @@
+﻿> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+
+> Task :app:compileDebugKotlin
+.\gradlew.bat : e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/ap
+p/ui/plan/TrainingPlanScreen.kt:55:8 Unresolved reference 'coil'.
+At line:1 char:72
++ ... obile-app\android-app"; .\gradlew.bat compileDebugKotlin 2>&1 | Out-F ...
++                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///C:/U...ference 'coil'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/app/ui/plan/Traini
+ngPlanScreen.kt:56:8 Unresolved reference 'coil'.
+e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/app/ui/plan/Traini
+ngPlanScreen.kt:181:45 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/app/ui/plan/Traini
+ngPlanScreen.kt:183:33 Unresolved reference 'AsyncImage'.
+e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/app/ui/plan/Traini
+ngPlanScreen.kt:184:45 Unresolved reference 'ImageRequest'.
+e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/app/ui/plan/Traini
+ngPlanScreen.kt:358:25 Unresolved reference 'AsyncImage'.
+e: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/app/src/main/java/com/wellnessmate/app/ui/plan/Traini
+ngPlanScreen.kt:359:37 Unresolved reference 'ImageRequest'.
+
+> Task :app:compileDebugKotlin FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/14188/Desktop/wellness-mobile-app/android-app/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+7 actionable tasks: 1 executed, 6 up-to-date
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
