@@ -44,16 +44,16 @@ public class AiAdvisorClient {
 
   static final String AGENT_SYSTEM_PROMPT = SYSTEM_PROMPT + """
 
-      CRITICAL — You MUST use tools for these actions. Never just talk about doing them:
-      - When the user asks to record, log, save, or track something → call create_tracker_entry
+      CRITICAL -- You MUST use tools for these actions. Never just talk about doing them:
+      - When the user asks to record, log, save, or track something -> call create_tracker_entry
         (for health metrics) or create_food_entry (for meals/food). Do NOT say "I've noted that"
         without actually calling the tool.
-      - When the user asks about their data, history, stats, or trends → call query_tracker_data.
+      - When the user asks about their data, history, stats, or trends -> call query_tracker_data.
         Do NOT rely only on context; always get fresh data.
-      - When the user asks to change or fix an entry → first query to find the entry ID,
+      - When the user asks to change or fix an entry -> first query to find the entry ID,
         then tell the user which entry you plan to update and wait for confirmation,
         then call update_tracker_entry (for food entries: delete + create_food_entry instead).
-      - When the user asks to remove or delete an entry → first query to find the entry ID,
+      - When the user asks to remove or delete an entry -> first query to find the entry ID,
         then tell the user which entry you plan to delete and wait for confirmation,
         then call delete_tracker_entry.
       - If the user's request is ambiguous (e.g. "change my sleep"), ask which specific
@@ -62,14 +62,14 @@ public class AiAdvisorClient {
         user to look up data you just received.
       - If a tool returns an error, explain the problem to the user and suggest a fix.
 
-      FOOD TRACKER — use create_food_entry for each food item:
+      FOOD TRACKER -- use create_food_entry for each food item:
       - create_food_entry needs ONLY: meal_type (BREAKFAST/LUNCH/DINNER/SNACK), food_name, calories.
-        grams, protein_grams, carbs_grams, fat_grams are OPTIONAL — omit if unknown.
+        grams, protein_grams, carbs_grams, fat_grams are OPTIONAL -- omit if unknown.
       - Call it ONCE per food item. Two foods? Two calls. Same meal_type if part of same meal.
-      - Estimate calories from common portions: bowl of rice ≈ 260kcal, chicken breast 150g ≈ 250kcal,
-        apple ≈ 95kcal, egg ≈ 70kcal.
-      - To delete: query data → look for "use entry_id=N" in the result → use THAT number
-        for delete_tracker_entry. Do NOT use the FoodEntry # number — use the entry_id shown.
+      - Estimate calories from common portions: bowl of rice ~ 260kcal, chicken breast 150g ~ 250kcal,
+        apple ~ 95kcal, egg ~ 70kcal.
+      - To delete: query data -> look for "use entry_id=N" in the result -> use THAT number
+        for delete_tracker_entry. Do NOT use the FoodEntry # number -- use the entry_id shown.
       - To modify: confirm, then delete old + create_food_entry new.
       - NEVER retry the same delete twice. If it returns "not found", tell the user it was
         already deleted. If it succeeds, do NOT query and delete again.
@@ -92,7 +92,7 @@ public class AiAdvisorClient {
 
   // ── Legacy wrappers (delegate to chatWithTools) ──
 
-  /** Synchronous call — used by DocumentGenerationService. */
+  /** Synchronous call -- used by DocumentGenerationService. */
   public String reply(String input) {
     return reply(null, input);
   }
@@ -123,7 +123,7 @@ public class AiAdvisorClient {
     }
   }
 
-  /** Stream tokens — legacy wrapper, no tools. */
+  /** Stream tokens -- legacy wrapper, no tools. */
   public void replyStream(String input,
                           Consumer<String> onToken,
                           Consumer<Throwable> onError,
@@ -131,14 +131,14 @@ public class AiAdvisorClient {
     replyStream(null, input, onToken, onError, onComplete);
   }
 
-  /** Stream with optional RAG context — legacy wrapper, no tools. */
+  /** Stream with optional RAG context -- legacy wrapper, no tools. */
   public void replyStream(String ragContext, String input,
                           Consumer<String> onToken,
                           Consumer<Throwable> onError,
                           Runnable onComplete) {
     List<Map<String, Object>> messages = buildMessages(input, ragContext);
     chatWithTools(messages, null,
-        token -> {},  // onThinkingToken — no-op for legacy path
+        token -> {},  // onThinkingToken -- no-op for legacy path
         onToken,
         toolCalls -> onError.accept(
             new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "UNEXPECTED_TOOL_CALL",
