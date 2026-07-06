@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.isFile) {
+        file.inputStream().use(::load)
+    }
+}
+
 val debugApiBaseUrl = providers.gradleProperty("API_BASE_URL")
+    .orElse(providers.provider { localProperties.getProperty("API_BASE_URL") })
     .orElse("http://10.0.2.2:18080/")
 
 android {

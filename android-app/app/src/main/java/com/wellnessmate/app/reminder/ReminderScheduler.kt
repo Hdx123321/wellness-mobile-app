@@ -28,30 +28,48 @@ data class ReminderSettings(
 object ReminderScheduler {
     private const val PREFS = "daily-reminder"
     private const val REQUEST_CODE = 4101
+    const val DAILY_KEY = "daily"
+    const val SLEEP_KEY = "sleep"
+    const val WAKE_KEY = "wake"
 
-    fun settings(context: Context): ReminderSettings {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    fun settings(context: Context): ReminderSettings = settings(context, DAILY_KEY)
+
+    fun settings(context: Context, key: String): ReminderSettings {
+        val prefs = context.getSharedPreferences(prefsName(key), Context.MODE_PRIVATE)
+        val defaults = defaultSettings(key)
         return ReminderSettings(
             enabled = prefs.getBoolean("enabled", false),
-            hour = prefs.getInt("hour", 20),
-            minute = prefs.getInt("minute", 0),
-            title = prefs.getString("title", "WellnessMate daily check-in") ?: "WellnessMate daily check-in",
-            content = prefs.getString("content", "Review today's trackers and record anything missing.") ?: "Review today's trackers and record anything missing.",
+            hour = prefs.getInt("hour", defaults.hour),
+            minute = prefs.getInt("minute", defaults.minute),
+            title = prefs.getString("title", defaults.title) ?: defaults.title,
+            content = prefs.getString("content", defaults.content) ?: defaults.content,
         )
     }
 
-    fun save(context: Context, settings: ReminderSettings) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+    fun save(context: Context, settings: ReminderSettings) = save(context, DAILY_KEY, settings)
+
+    fun save(context: Context, key: String, settings: ReminderSettings) {
+        context.getSharedPreferences(prefsName(key), Context.MODE_PRIVATE).edit()
             .putBoolean("enabled", settings.enabled)
             .putInt("hour", settings.hour)
             .putInt("minute", settings.minute)
             .putString("title", settings.title)
             .putString("content", settings.content)
             .apply()
-        if (settings.enabled) schedule(context, settings) else cancel(context)
+        if (settings.enabled) schedule(context, key, settings) else cancel(context, key)
     }
 
     fun schedule(context: Context, settings: ReminderSettings = settings(context)) {
+        schedule(context, DAILY_KEY, settings)
+    }
+
+    fun scheduleAll(context: Context) {
+        listOf(DAILY_KEY, SLEEP_KEY, WAKE_KEY).forEach { key ->
+            schedule(context, key, settings(context, key))
+        }
+    }
+
+    fun schedule(context: Context, key: String, settings: ReminderSettings = settings(context, key)) {
         if (!settings.enabled) return
         val trigger = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, settings.hour)
@@ -65,26 +83,42 @@ object ReminderScheduler {
             AlarmManager.RTC_WAKEUP,
             trigger.timeInMillis,
             AlarmManager.INTERVAL_DAY,
-            pendingIntent(context),
+            pendingIntent(context, key),
         )
     }
 
-    private fun cancel(context: Context) {
-        context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context))
+    private fun cancel(context: Context, key: String = DAILY_KEY) {
+        context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context, key))
     }
 
-    private fun pendingIntent(context: Context) = PendingIntent.getBroadcast(
+    private fun pendingIntent(context: Context, key: String) = PendingIntent.getBroadcast(
         context,
-        REQUEST_CODE,
-        Intent(context, ReminderReceiver::class.java).setAction("com.wellnessmate.DAILY_REMINDER"),
+        requestCode(key),
+        Intent(context, ReminderReceiver::class.java)
+            .setAction("com.wellnessmate.REMINDER.$key")
+            .putExtra("reminder_key", key),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
+
+    private fun prefsName(key: String) = if (key == DAILY_KEY) PREFS else "$PREFS-$key"
+
+    private fun requestCode(key: String) = when (key) {
+        SLEEP_KEY -> REQUEST_CODE + 1
+        WAKE_KEY -> REQUEST_CODE + 2
+        else -> REQUEST_CODE
+    }
+
+    private fun defaultSettings(key: String) = when (key) {
+        SLEEP_KEY -> ReminderSettings(false, 23, 30, "Sleep time", "Time to wind down and get ready for bed.")
+        WAKE_KEY -> ReminderSettings(false, 7, 30, "Wake up", "Good morning. Time to start your day.")
+        else -> ReminderSettings(false, 20, 0)
+    }
 }
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            ReminderScheduler.schedule(context)
+            ReminderScheduler.scheduleAll(context)
             return
         }
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
@@ -98,7 +132,8 @@ class ReminderReceiver : BroadcastReceiver() {
             context, 0, Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val s = ReminderScheduler.settings(context)
+        val key = intent.getStringExtra("reminder_key") ?: ReminderScheduler.DAILY_KEY
+        val s = ReminderScheduler.settings(context, key)
         val notification = NotificationCompat.Builder(context, "daily-wellness")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(s.title)
