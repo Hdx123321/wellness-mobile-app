@@ -43,6 +43,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
@@ -77,6 +79,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -124,7 +127,7 @@ fun FoodTrackerScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Food tracker", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-                TextButton(onClick = onBack) { Text("Back") }
+                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
             if (state.loading) {
                 CircularProgressIndicator(modifier = Modifier.padding(24.dp))
@@ -156,9 +159,13 @@ fun FoodTrackerScreen(
                                 Text("${format(totalEntries(mealEntries).calories)} kcal")
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                WellnessIconButton("+", "Add food", onClick = { onAddFood(selectedDate, meal.name) })
+                                IconButton(onClick = { onAddFood(selectedDate, meal.name) }) {
+                                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_search), "Add food", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
                                 if (selectedDate == LocalDate.now()) {
-                                    WellnessIconButton("📷", "Take photo", onClick = { onTakePhoto(selectedDate, meal.name) })
+                                    IconButton(onClick = { onTakePhoto(selectedDate, meal.name) }) {
+                                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_photo), "Take photo", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
                             }
                         }
@@ -293,7 +300,7 @@ fun FoodSelectionScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onBack) { Text("Back") }
+            IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             Text("${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
         }
         Row(
@@ -328,8 +335,8 @@ fun FoodSelectionScreen(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            Button(onClick = { viewModel.search(query) }, modifier = Modifier.padding(start = 8.dp)) {
-                Text("Search")
+            IconButton(onClick = { viewModel.search(query) }) {
+                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_search), "Search", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
             }
         }
 

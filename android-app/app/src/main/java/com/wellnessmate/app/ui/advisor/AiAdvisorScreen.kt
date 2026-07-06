@@ -39,9 +39,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.painterResource
 import com.mikepenz.markdown.m3.Markdown
 import com.wellnessmate.app.ui.AiAdvisorViewModel
 import kotlinx.coroutines.launch
@@ -96,8 +100,8 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
                                     TextButton(onClick = {
                                         renameId = session.id; renameDraft = session.title
                                     }) { Text("✏", style = MaterialTheme.typography.bodySmall) }
-                                    TextButton(onClick = { viewModel.deleteSession(session.id) }) {
-                                        Text("🗑", style = MaterialTheme.typography.bodySmall)
+                                    IconButton(onClick = { viewModel.deleteSession(session.id) }) {
+                                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
                                     }
                                 }
                             },
@@ -110,7 +114,9 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("AI wellness advisor", style = MaterialTheme.typography.headlineMedium)
-                TextButton(onClick = { scope.launch { drawerState.open() } }) { Text("☰ Chats") }
+                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "Chats", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                }
             }
             Text("Uses your profile and recent tracker data. Guidance is informational, not diagnosis or emergency care.",
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))

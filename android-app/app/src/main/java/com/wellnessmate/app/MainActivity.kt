@@ -6,6 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,7 +35,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            val wellnessGreen = Color(0xFF5DB130)
+            val wellnessColorScheme = lightColorScheme(
+                primary = wellnessGreen,
+                onPrimary = Color.White,
+                primaryContainer = Color(0xFFDCE8D4),
+                onPrimaryContainer = Color(0xFF1A3700),
+                secondary = Color(0xFF586249),
+                onSecondary = Color.White,
+                secondaryContainer = Color(0xFFDCE8D4),
+                onSecondaryContainer = Color(0xFF161E0A),
+            )
+            MaterialTheme(colorScheme = wellnessColorScheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     WellnessMateApp(container)
                 }

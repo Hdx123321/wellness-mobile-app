@@ -61,6 +61,9 @@ import com.wellnessmate.app.data.TrainingPlanResponse
 import com.wellnessmate.app.data.WorkoutBlockRequest
 import com.wellnessmate.app.data.WorkoutBlockResponse
 import com.wellnessmate.app.ui.TrainingPlanViewModel
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.painterResource
 import com.wellnessmate.app.ui.components.WellnessIconButton
 
 // ── Block editor state holder ──
@@ -108,7 +111,9 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
                         Text("Training plans", style = MaterialTheme.typography.headlineMedium)
                         Text("Plans published by WellnessMate coaches")
                     }
-                    if (user.role == "COACH") WellnessIconButton("+", "Publish training plan", onClick = { creating = true })
+                    if (user.role == "COACH") IconButton(onClick = { creating = true }) {
+                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "Publish training plan", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
                 state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (state.loading) CircularProgressIndicator(Modifier.padding(24.dp))
@@ -167,7 +172,7 @@ private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel:
     LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onBack) { Text("Back") }
+                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
                 Text(plan.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
             }
             Text("Coach ${plan.coachName} · ${plan.difficulty} · ${plan.durationWeeks} weeks")
@@ -311,7 +316,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("Back") }
+            IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             Text(if (existing != null) "Edit plan" else "Publish training plan",
                 style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
         }
@@ -334,7 +339,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
                         Text("Block ${i + 1}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         TextButton(onClick = { if (i > 0) { val mv = blocks.removeAt(i); blocks.add(i - 1, mv) } }, enabled = i > 0) { Text("↑") }
                         TextButton(onClick = { if (i < blocks.size - 1) { val mv = blocks.removeAt(i); blocks.add(i + 1, mv) } }, enabled = i < blocks.size - 1) { Text("↓") }
-                        TextButton(onClick = { if (blocks.size > 1) blocks.removeAt(i) }) { Text("✕") }
+                        IconButton(onClick = { if (blocks.size > 1) blocks.removeAt(i) }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Remove block", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                     }
                     OutlinedTextField(b.title, { b.title = it }, label = { Text("Title (e.g. Dumbbell Curls 4×12)") },
                         modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -382,7 +387,11 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
             }
         }
         OutlinedButton(onClick = { blocks.add(BlockEditState.empty()) },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text("+ Add block") }
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(4.dp))
+            Text("Add block")
+        }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
         PlanField("Equipment (optional)", equipment, 2) { equipment = it }
