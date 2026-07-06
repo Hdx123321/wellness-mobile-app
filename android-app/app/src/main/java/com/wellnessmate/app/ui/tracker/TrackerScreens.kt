@@ -1686,8 +1686,6 @@ private fun trackerIconRes(type: String): Int = when (type) {
     "SLEEP" -> com.wellnessmate.app.R.drawable.ic_sleep
     "WATER" -> com.wellnessmate.app.R.drawable.ic_water
     "MEDICINE" -> com.wellnessmate.app.R.drawable.ic_medicine
-    "HEART_RATE" -> com.wellnessmate.app.R.drawable.ic_heart_rate
-    "BLOOD_GLUCOSE" -> com.wellnessmate.app.R.drawable.ic_medicine
     else -> com.wellnessmate.app.R.drawable.ic_more
 }
 

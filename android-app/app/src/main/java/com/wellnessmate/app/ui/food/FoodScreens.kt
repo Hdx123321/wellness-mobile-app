@@ -563,7 +563,7 @@ private fun SelectedFoodsBottomSheet(
                             Text("${format(calories)} kcal", style = MaterialTheme.typography.bodySmall)
                         }
                         Text("${format(amount.toDoubleOrNull() ?: 0.0)} g")
-                        TextButton(onClick = { onRemove(food.id) }) { Text("Delete") }
+                        IconButton(onClick = { onRemove(food.id) }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                     }
                     HorizontalDivider()
                 }
@@ -924,7 +924,7 @@ fun FoodPhotoReviewScreen(
                             }
                         }
                         Text("Confidence ${format(item.confidence * 100)}%", style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = { viewModel.removeAnalysisItem(index) }) { Text("Delete item") }
+                        IconButton(onClick = { viewModel.removeAnalysisItem(index) }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                     }
                 }
             }
@@ -1043,7 +1043,7 @@ private fun FoodEntryCard(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                     )
-                    if (editable) TextButton(onClick = onDelete) { Text("Delete") }
+                    if (editable) IconButton(onClick = onDelete) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                 }
                 Text("${format(entry.totals.calories)} kcal", style = MaterialTheme.typography.bodyMedium)
                 Text(

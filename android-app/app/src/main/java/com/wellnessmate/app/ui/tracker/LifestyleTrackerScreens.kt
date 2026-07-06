@@ -30,6 +30,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -54,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -364,7 +367,7 @@ fun SleepTrackerScreen(
                         LinearProgressIndicator(
                             progress = { progress },
                             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                            color = Color(0xFF5FA8FF),
+                            color = Color(0xFF5DB130),
                         )
                     }
                 }
@@ -385,7 +388,7 @@ fun SleepTrackerScreen(
                 Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(Modifier.fillMaxWidth().padding(20.dp)) {
                         Text("Sleep analysis", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("Last 7 days", color = Color(0xFF5FA8FF), modifier = Modifier.padding(top = 4.dp))
+                        Text("Last 7 days", color = Color(0xFF5DB130), modifier = Modifier.padding(top = 4.dp))
                         Spacer(Modifier.height(22.dp))
                         Text("Goal: ${formatSleep(goal)}")
                         HorizontalDivider(Modifier.padding(top = 6.dp, bottom = 12.dp))
@@ -395,7 +398,7 @@ fun SleepTrackerScreen(
                                     Box(
                                         Modifier.size(width = 14.dp, height = (24 + value * 8).dp)
                                             .clip(RoundedCornerShape(12.dp))
-                                            .background(if (value >= goal) Color(0xFF5FA8FF) else Color(0xFFD9DDE8)),
+                                            .background(if (value >= goal) Color(0xFF5DB130) else Color(0xFFD9DDE8)),
                                     )
                                     Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.labelSmall)
                                 }
@@ -426,7 +429,7 @@ fun SleepTrackerScreen(
         FloatingActionButton(
             onClick = { onAdd("SLEEP") },
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
-            containerColor = Color(0xFF5FA8FF),
+            containerColor = Color(0xFF5DB130),
         ) { Text("+", style = MaterialTheme.typography.headlineMedium, color = Color.White) }
     }
 
@@ -536,7 +539,7 @@ private fun LifestyleHeader(title: String, date: LocalDate, onBack: () -> Unit) 
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = onBack) { Text("Back") }
+        IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
         Text(
             title,
             style = MaterialTheme.typography.headlineMedium,
