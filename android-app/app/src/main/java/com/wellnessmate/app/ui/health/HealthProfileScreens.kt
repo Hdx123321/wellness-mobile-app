@@ -96,8 +96,8 @@ fun HealthProfileScreen(
                     MetricCard("Weight", "${format(metrics.currentWeightKg)} kg", Modifier.weight(1f), onWeight)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard("Basal metabolism", metrics.basalMetabolismText, Modifier.weight(1f))
-                    MetricCard("Fat-burning heart rate", metrics.fatBurningHeartRateText, Modifier.weight(1f))
+                    MetricCard("Basal metabolism", metrics.basalMetabolismText, Modifier.weight(1f), compact = true)
+                    MetricCard("Fat-burning heart rate", metrics.fatBurningHeartRateText, Modifier.weight(1f), compact = true)
                 }
                 BmiRangeCard(metrics.bmi)
                 Text(
@@ -136,7 +136,12 @@ private fun BmiRangeCard(bmi: Double) {
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text("BMI", style = MaterialTheme.typography.titleMedium)
-                Text("${format(bmi)} · $category", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "${format(bmi)} · $category",
+                    style = MaterialTheme.typography.titleSmall,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp),
+                )
             }
             Canvas(modifier = Modifier.fillMaxWidth().height(42.dp).padding(top = 12.dp)) {
                 val barTop = 8.dp.toPx()
@@ -235,17 +240,27 @@ private fun Header(title: String, onBack: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
         TextButton(onClick = onBack) { Text("Back") }
     }
 }
 
 @Composable
-private fun MetricCard(title: String, value: String, modifier: Modifier, onClick: (() -> Unit)? = null) {
+private fun MetricCard(
+    title: String,
+    value: String,
+    modifier: Modifier,
+    onClick: (() -> Unit)? = null,
+    compact: Boolean = false,
+) {
     Card(modifier = modifier.padding(vertical = 5.dp).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(title, style = MaterialTheme.typography.labelLarge)
-            Text(value, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 4.dp))
+            Text(title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 2)
+            Text(
+                value,
+                style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 4.dp),
+            )
             if (onClick != null) Text("Tap to change ›", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         }
     }

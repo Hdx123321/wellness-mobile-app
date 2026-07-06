@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.Camera
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
@@ -27,6 +28,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -46,6 +50,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -65,9 +71,16 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -79,6 +92,7 @@ import com.wellnessmate.app.data.FoodNutrients
 import com.wellnessmate.app.ui.FoodViewModel
 import com.wellnessmate.app.ui.HealthProfileViewModel
 import com.wellnessmate.app.ui.components.WellnessIconButton
+import coil3.compose.AsyncImage
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -101,20 +115,6 @@ fun FoodTrackerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var deleteId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var pendingPhotoDate by remember { mutableStateOf<LocalDate?>(null) }
-    var pendingPhotoMeal by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        val date = pendingPhotoDate
-        val meal = pendingPhotoMeal
-        if (uri != null && date != null && meal != null) {
-            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            if (bytes != null) {
-                viewModel.analyze(compressForAnalysis(bytes), date, meal) {}
-                onReviewPhoto()
-            }
-        }
-    }
     val selectedEntries = state.entries.filter { foodDate(it) == selectedDate }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -123,7 +123,7 @@ fun FoodTrackerScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Food tracker", style = MaterialTheme.typography.headlineMedium)
+                Text("Food tracker", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
                 TextButton(onClick = onBack) { Text("Back") }
             }
             if (state.loading) {
@@ -159,11 +159,6 @@ fun FoodTrackerScreen(
                                 WellnessIconButton("+", "Add food", onClick = { onAddFood(selectedDate, meal.name) })
                                 if (selectedDate == LocalDate.now()) {
                                     WellnessIconButton("📷", "Take photo", onClick = { onTakePhoto(selectedDate, meal.name) })
-                                    WellnessIconButton("🖼️", "Choose photo", onClick = {
-                                        pendingPhotoDate = selectedDate
-                                        pendingPhotoMeal = meal.name
-                                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                    })
                                 }
                             }
                         }
@@ -172,7 +167,10 @@ fun FoodTrackerScreen(
                                 LaunchedEffect(entry.id) { viewModel.loadThumbnail(entry.id) }
                             }
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            FoodEntryCard(entry, state.thumbnails[entry.id], editable = true) {
+                            val catalogImageUrl = entry.items.firstNotNullOfOrNull { item ->
+                                state.catalog.firstOrNull { it.id == item.catalogItemId }?.imageUrl
+                            }
+                            FoodEntryCard(entry, state.thumbnails[entry.id], catalogImageUrl, editable = true) {
                                 deleteId = entry.id
                             }
                         }
@@ -589,6 +587,13 @@ fun FoodCameraScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                viewModel.analyze(compressForAnalysis(input.readBytes()), date, mealType, onComplete)
+            }
+        }
+    }
     var granted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -596,31 +601,71 @@ fun FoodCameraScreen(
         granted = it
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Photograph your meal", style = MaterialTheme.typography.headlineMedium)
-        Text("The photo is sent to the configured server AI only when you tap Analyze.", modifier = Modifier.padding(8.dp))
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (!granted) {
-            Button(onClick = { permission.launch(Manifest.permission.CAMERA) }) { Text("Allow camera") }
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            Column(
+                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("Camera access is needed to photograph your meal.", color = Color.White)
+                Button(onClick = { permission.launch(Manifest.permission.CAMERA) }, modifier = Modifier.padding(top = 16.dp)) {
+                    Text("Allow camera")
+                }
+                TextButton(onClick = onCancel) { Text("Cancel", color = Color.White) }
+            }
         } else {
             CameraPreview(
                 busy = state.analyzing,
-                onPhoto = {
-                    viewModel.analyze(it, date, mealType) {}
-                    onComplete()
+                onPhoto = { viewModel.analyze(compressForAnalysis(it), date, mealType, onComplete) },
+                onChoosePhoto = {
+                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
                 onCancel = onCancel,
             )
+        }
+        state.error?.let {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.align(Alignment.TopCenter).padding(start = 56.dp, end = 16.dp, top = 20.dp),
+            ) {
+                Text(it, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(12.dp))
+            }
+        }
+        if (state.analyzing) {
+            Surface(
+                color = Color.Black.copy(alpha = 0.72f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.align(Alignment.Center),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                    Text("Analyzing food…", color = Color.White, modifier = Modifier.padding(top = 12.dp))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun CameraPreview(busy: Boolean, onPhoto: (ByteArray) -> Unit, onCancel: () -> Unit) {
+private fun CameraPreview(
+    busy: Boolean,
+    onPhoto: (ByteArray) -> Unit,
+    onChoosePhoto: () -> Unit,
+    onCancel: () -> Unit,
+) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var capture by remember { mutableStateOf<ImageCapture?>(null) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var torchEnabled by remember { mutableStateOf(false) }
+    var capturing by remember { mutableStateOf(false) }
+    var shutterFlash by remember { mutableStateOf(false) }
     var cameraError by remember { mutableStateOf<String?>(null) }
     val executor = remember { Executors.newSingleThreadExecutor() }
     DisposableEffect(Unit) {
@@ -630,7 +675,7 @@ private fun CameraPreview(busy: Boolean, onPhoto: (ByteArray) -> Unit, onCancel:
         }
     }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).also { view ->
@@ -644,39 +689,118 @@ private fun CameraPreview(busy: Boolean, onPhoto: (ByteArray) -> Unit, onCancel:
                                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                                 .build()
                             provider.unbindAll()
-                            provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
+                            camera = provider.bindToLifecycle(
+                                lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture,
+                            )
                             capture = imageCapture
                         }.onFailure { cameraError = "Unable to start camera." }
                     }, ContextCompat.getMainExecutor(ctx))
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(500.dp),
+            modifier = Modifier.fillMaxSize(),
         )
-        cameraError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(
-            onClick = {
-                val target = capture ?: return@Button
+        if (shutterFlash) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.7f)))
+        }
+        IconButton(
+            onClick = onCancel,
+            enabled = !busy,
+            modifier = Modifier.align(Alignment.TopStart).padding(12.dp).background(Color.Black.copy(alpha = 0.45f), CircleShape),
+        ) { Text("×", color = Color.White, fontSize = 30.sp) }
+        Text(
+            "Photograph your meal",
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp),
+        )
+        cameraError?.let {
+            Text(
+                it,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center).background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp)).padding(12.dp),
+            )
+        }
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = 0.5f)).padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onChoosePhoto, enabled = !busy && !capturing, modifier = Modifier.size(56.dp)) {
+                GalleryIcon()
+            }
+            IconButton(
+                onClick = capturePhoto@{
+                val target = capture ?: return@capturePhoto
+                capturing = true
+                shutterFlash = true
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                Handler(Looper.getMainLooper()).postDelayed({ shutterFlash = false }, 120)
                 val file = File.createTempFile("food-", ".jpg", context.cacheDir)
                 val options = ImageCapture.OutputFileOptions.Builder(file).build()
                 target.takePicture(options, executor, object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(result: ImageCapture.OutputFileResults) {
                         val bytes = file.readBytes()
                         file.delete()
-                        Handler(Looper.getMainLooper()).post { onPhoto(compressForAnalysis(bytes)) }
+                        Handler(Looper.getMainLooper()).post {
+                            capturing = false
+                            onPhoto(bytes)
+                        }
                     }
 
                     override fun onError(exception: ImageCaptureException) {
                         file.delete()
-                        Handler(Looper.getMainLooper()).post { cameraError = "Photo capture failed." }
+                        Handler(Looper.getMainLooper()).post {
+                            capturing = false
+                            cameraError = "Photo capture failed."
+                        }
                     }
                 })
-            },
-            enabled = capture != null && !busy,
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-        ) {
-            if (busy) CircularProgressIndicator(strokeWidth = 2.dp) else Text("Capture and analyze")
+                },
+                enabled = capture != null && !busy && !capturing,
+                modifier = Modifier.size(76.dp).background(Color.White.copy(alpha = 0.3f), CircleShape),
+            ) {
+                Canvas(modifier = Modifier.size(62.dp)) {
+                    drawCircle(Color.White, style = Fill)
+                    drawCircle(Color(0xFFDDDDDD), style = Stroke(width = 3.dp.toPx()))
+                }
+            }
+            IconButton(
+                onClick = {
+                    torchEnabled = !torchEnabled
+                    camera?.cameraControl?.enableTorch(torchEnabled)
+                },
+                enabled = !busy && !capturing && camera?.cameraInfo?.hasFlashUnit() == true,
+                modifier = Modifier.size(56.dp).background(
+                    if (torchEnabled) Color.White.copy(alpha = 0.25f) else Color.Transparent,
+                    CircleShape,
+                ),
+            ) { Text("⚡", color = Color.White, fontSize = 28.sp) }
         }
-        TextButton(onClick = onCancel) { Text("Cancel") }
+        if (capturing) {
+            Text(
+                "Photo captured…",
+                color = Color.White,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 116.dp)
+                    .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun GalleryIcon() {
+    Canvas(modifier = Modifier.size(30.dp)) {
+        drawRoundRect(Color.White, cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()), style = Stroke(2.dp.toPx()))
+        drawCircle(Color.White, radius = 3.dp.toPx(), center = Offset(size.width * 0.72f, size.height * 0.28f))
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(size.width * 0.12f, size.height * 0.78f)
+            lineTo(size.width * 0.38f, size.height * 0.48f)
+            lineTo(size.width * 0.55f, size.height * 0.65f)
+            lineTo(size.width * 0.72f, size.height * 0.48f)
+            lineTo(size.width * 0.9f, size.height * 0.78f)
+        }
+        drawPath(path, Color.White, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
     }
 }
 
@@ -863,7 +987,11 @@ private fun CompactFoodCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(foodEmoji(food.categoryId), style = MaterialTheme.typography.headlineSmall)
+                FoodThumbnail(
+                    model = food.imageUrl,
+                    fallback = foodEmoji(food.categoryId),
+                    modifier = Modifier.size(52.dp),
+                )
                 Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
                     Text(food.name, style = MaterialTheme.typography.titleSmall)
                     Text(
@@ -884,24 +1012,59 @@ private fun CompactFoodCard(
 }
 
 @Composable
-private fun FoodEntryCard(entry: FoodEntryResponse, thumbnail: ByteArray?, editable: Boolean, onDelete: () -> Unit) {
+private fun FoodEntryCard(
+    entry: FoodEntryResponse,
+    thumbnail: ByteArray?,
+    catalogImageUrl: String?,
+    editable: Boolean,
+    onDelete: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            thumbnail?.let { bytes ->
-                bitmap(bytes)?.let {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = "Meal thumbnail",
-                        modifier = Modifier.fillMaxWidth().height(120.dp).padding(bottom = 8.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FoodThumbnail(
+                model = thumbnail ?: catalogImageUrl,
+                fallback = foodEmoji(null),
+                modifier = Modifier.size(82.dp),
+            )
+            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        entry.items.joinToString { it.name },
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
                     )
+                    if (editable) TextButton(onClick = onDelete) { Text("Delete") }
                 }
+                Text("${format(entry.totals.calories)} kcal", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "P ${format(entry.totals.proteinGrams)} g  ·  C ${format(entry.totals.carbohydrateGrams)} g  ·  " +
+                        "F ${format(entry.totals.fatGrams)} g  ·  Fiber ${format(entry.totals.fiberGrams)} g",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(entry.items.joinToString { it.name }, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                if (editable) TextButton(onClick = onDelete) { Text("Delete") }
-            }
-            NutrientSummary(entry.totals)
-            if (entry.source == "AI") Text("AI estimate · confirmed by user", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun FoodThumbnail(model: Any?, fallback: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(fallback, style = MaterialTheme.typography.headlineSmall)
+        if (model != null) {
+            AsyncImage(
+                model = model,
+                contentDescription = "Food photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
@@ -938,14 +1101,11 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
             Text("Calorie intake", style = MaterialTheme.typography.titleLarge)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Food intake")
-                    Text(intake.toString(), style = MaterialTheme.typography.headlineMedium)
-                }
-                Box(modifier = Modifier.size(170.dp), contentAlignment = Alignment.Center) {
+                BudgetMetric("Food intake", intake.toString(), Modifier.weight(1f))
+                Box(modifier = Modifier.size(132.dp), contentAlignment = Alignment.Center) {
                     val ringColor = MaterialTheme.colorScheme.primary
                     val trackColor = Color(0xFFD6D6D6)
                     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -962,18 +1122,15 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
                         )
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Remaining")
-                        Text(remaining.toString(), style = MaterialTheme.typography.headlineLarge)
+                        Text("Remaining", style = MaterialTheme.typography.bodySmall)
+                        Text(remaining.toString(), style = MaterialTheme.typography.headlineMedium)
                         Text("Estimated budget", style = MaterialTheme.typography.bodySmall)
                         Text(budget.toString(), style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Exercise burn")
-                    Text(exerciseBurn.toString(), style = MaterialTheme.typography.headlineMedium)
-                }
+                BudgetMetric("Exercise burn", exerciseBurn.toString(), Modifier.weight(1f))
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MacroProgress("Carbs", nutrients.carbohydrateGrams, carbGoal, Modifier.weight(1f))
                 MacroProgress("Protein", nutrients.proteinGrams, proteinGoal, Modifier.weight(1f))
                 MacroProgress("Fat", nutrients.fatGrams, fatGoal, Modifier.weight(1f))
@@ -984,8 +1141,8 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
 
 @Composable
 private fun MacroProgress(label: String, amount: Double, goal: Double, modifier: Modifier) {
-    Column(modifier = modifier) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
         LinearProgressIndicator(
             progress = { (amount / goal.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -994,7 +1151,19 @@ private fun MacroProgress(label: String, amount: Double, goal: Double, modifier:
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
-        Text("${format(amount)} / ${format(goal)} g", style = MaterialTheme.typography.bodySmall)
+        Text(
+            "${format(amount)} / ${format(goal)} g",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun BudgetMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
+        Text(value, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
     }
 }
 

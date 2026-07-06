@@ -57,6 +57,7 @@ public class FoodImageAnalyzer {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("model", model);
     payload.put("max_tokens", 800);
+    payload.put("thinking", Map.of("type", "disabled"));
     payload.put("messages", List.of(Map.of(
         "role", "user",
         "content", List.of(

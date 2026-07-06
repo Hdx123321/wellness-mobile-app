@@ -72,6 +72,7 @@ fun FoodDetailBottomSheet(
             Text(
                 "${date.monthValue}/${date.dayOfMonth}  $mealLabel",
                 style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
             )
             TextButton(onClick = ::close) { Text("Close") }
         }

@@ -48,7 +48,7 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
         else -> LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             item {
                 Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Training plans", style = MaterialTheme.typography.headlineMedium)
                         Text("Plans published by WellnessMate coaches")
                     }
@@ -81,7 +81,7 @@ private fun PlanDetail(plan: TrainingPlanResponse, client: Boolean, onCheckIn: (
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onBack) { Text("Back") }
-                Text(plan.title, style = MaterialTheme.typography.headlineSmall)
+                Text(plan.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
             }
             Text("Coach ${plan.coachName} · ${plan.difficulty} · ${plan.durationWeeks} weeks")
             PlanSection("Goal", plan.goal)
@@ -126,7 +126,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, onDone: () -> Unit, onB
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("Back") }
-            Text("Publish training plan", style = MaterialTheme.typography.headlineSmall)
+            Text("Publish training plan", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
         }
         PlanField("Plan title", title) { title = it }
         PlanField("Goal", goal) { goal = it }

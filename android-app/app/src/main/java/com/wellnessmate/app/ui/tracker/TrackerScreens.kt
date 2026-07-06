@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -55,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -572,7 +574,7 @@ private fun OptionalTrackerCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.padding(vertical = 6.dp).height(132.dp).clickable(onClick = onOpen),
+        modifier = modifier.padding(vertical = 6.dp).heightIn(min = 132.dp).clickable(onClick = onOpen),
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(14.dp),
@@ -616,11 +618,11 @@ private fun FoodHomeCard(
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Carbs ${formatAmount(carbohydrates)} g")
-                Text("Protein ${formatAmount(protein)} g")
-                Text("Fat ${formatAmount(fat)} g")
+                HomeMacro("Carbs", carbohydrates, Modifier.weight(1f))
+                HomeMacro("Protein", protein, Modifier.weight(1f))
+                HomeMacro("Fat", fat, Modifier.weight(1f))
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
@@ -707,10 +709,10 @@ private fun WorkoutHomeCard(
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                InfoChip("Days this week", "$workoutDays / 7")
-                InfoChip("Daily avg", "${dailyAverageCalories.roundToInt()} kcal")
+                InfoChip("Days this week", "$workoutDays / 7", Modifier.weight(1f))
+                InfoChip("Daily avg", "${dailyAverageCalories.roundToInt()} kcal", Modifier.weight(1f))
             }
             MiniSevenDayBarChart(caloriesByDay, modifier = Modifier.padding(top = 8.dp))
         }
@@ -772,7 +774,11 @@ private fun TrackerDetailScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("${trackerIcon(type)} ${typeLabel(type)}", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    "${trackerIcon(type)} ${typeLabel(type)}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.weight(1f),
+                )
                 TextButton(onClick = onBack) { Text("Back") }
             }
             ErrorBanner(state.error, viewModel::clearError)
@@ -791,9 +797,13 @@ private fun TrackerDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
-                            InfoChip("Weight", "${formatAmount(latestWeight)} kg")
-                            InfoChip("BMI", bmi?.let { formatAmount(it) } ?: "--")
-                            InfoChip(bodyFatLabel, bodyFat?.let { "${formatAmount(it)}%" } ?: "--%")
+                            InfoChip("Weight", "${formatAmount(latestWeight)} kg", Modifier.weight(1f))
+                            InfoChip("BMI", bmi?.let { formatAmount(it) } ?: "--", Modifier.weight(1f))
+                            InfoChip(
+                                bodyFatLabel,
+                                bodyFat?.let { "${formatAmount(it)}%" } ?: "--%",
+                                Modifier.weight(1f),
+                            )
                         }
                         if (storedBodyFat != null) {
                             Text(
@@ -1057,10 +1067,27 @@ private fun TrackerDayRow(
 }
 
 @Composable
-fun InfoChip(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun InfoChip(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, style = MaterialTheme.typography.titleLarge)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun HomeMacro(label: String, value: Double, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+        Text(
+            "${formatAmount(value)} g",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
