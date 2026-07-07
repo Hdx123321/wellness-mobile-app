@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.tracker
+package com.alpinefitness.app.ui.tracker
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

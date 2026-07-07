@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.health
+package com.alpinefitness.app.ui.health
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
@@ -38,9 +38,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.wellnessmate.app.data.ProfileResponse
-import com.wellnessmate.app.ui.HealthMetrics
-import com.wellnessmate.app.ui.HealthProfileViewModel
+import com.alpinefitness.app.data.ProfileResponse
+import com.alpinefitness.app.ui.HealthMetrics
+import com.alpinefitness.app.ui.HealthProfileViewModel
 import kotlin.math.roundToInt
 
 @Composable
@@ -54,7 +54,7 @@ fun HealthSummaryCard(viewModel: HealthProfileViewModel, onOpen: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Your health", style = MaterialTheme.typography.titleLarge)
-                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_more), "View", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
             }
             when {
                 state.loading -> CircularProgressIndicator(modifier = Modifier.padding(12.dp))
@@ -244,7 +244,7 @@ private fun Header(title: String, onBack: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+        IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
         Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
     }
 }

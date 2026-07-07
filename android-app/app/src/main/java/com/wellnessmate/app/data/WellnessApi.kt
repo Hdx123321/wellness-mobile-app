@@ -1,4 +1,4 @@
-package com.wellnessmate.app.data
+package com.alpinefitness.app.data
 
 import retrofit2.http.Body
 import retrofit2.http.DELETE

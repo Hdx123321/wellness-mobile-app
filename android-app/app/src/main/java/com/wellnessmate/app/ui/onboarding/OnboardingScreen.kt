@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.onboarding
+package com.alpinefitness.app.ui.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,9 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.wellnessmate.app.R
-import com.wellnessmate.app.data.OnboardingRequest
-import com.wellnessmate.app.ui.OnboardingViewModel
+import com.alpinefitness.app.R
+import com.alpinefitness.app.data.OnboardingRequest
+import com.alpinefitness.app.ui.OnboardingViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -256,5 +256,5 @@ private fun buildRequest(
 
 private fun csvSet(csv: String): Set<String> = csv.split(',').filter(String::isNotBlank).toSet()
 private fun label(value: String): String = value.lowercase().split('_').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
-private fun options(questions: List<com.wellnessmate.app.data.OnboardingQuestion>, id: String, fallback: List<String>): List<String> =
+private fun options(questions: List<com.alpinefitness.app.data.OnboardingQuestion>, id: String, fallback: List<String>): List<String> =
     questions.firstOrNull { it.id == id }?.options?.takeIf { it.isNotEmpty() } ?: fallback

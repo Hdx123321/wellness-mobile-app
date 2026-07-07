@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.tracker
+package com.alpinefitness.app.ui.tracker
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -53,11 +53,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wellnessmate.app.data.TrackerEntryRequest
-import com.wellnessmate.app.data.TrackerEntryResponse
-import com.wellnessmate.app.ui.HealthProfileViewModel
-import com.wellnessmate.app.ui.TrackerViewModel
-import com.wellnessmate.app.ui.components.WellnessIconButton
+import com.alpinefitness.app.data.TrackerEntryRequest
+import com.alpinefitness.app.data.TrackerEntryResponse
+import com.alpinefitness.app.ui.HealthProfileViewModel
+import com.alpinefitness.app.ui.TrackerViewModel
+import com.alpinefitness.app.ui.components.WellnessIconButton
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -204,7 +204,7 @@ fun WorkoutTrackerScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Workout Tracker", style = MaterialTheme.typography.headlineMedium)
-                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
             ErrorBanner(state.error, viewModel::clearError)
         }
@@ -560,12 +560,12 @@ fun WorkoutSelectionScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+            IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Add workout", style = MaterialTheme.typography.titleLarge)
                 Text(date.toString(), style = MaterialTheme.typography.bodySmall)
             }
-            IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Close", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+            IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Close", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
         }
         OutlinedTextField(
             value = query,
@@ -695,7 +695,7 @@ private fun LegacyWorkoutSelectionScreen(
                     Text("Add workout", style = MaterialTheme.typography.headlineMedium)
                     Text(date.toString(), style = MaterialTheme.typography.bodySmall)
                 }
-                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
             Text("Choose an activity", style = MaterialTheme.typography.titleMedium)
         }

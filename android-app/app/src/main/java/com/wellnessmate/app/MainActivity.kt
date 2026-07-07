@@ -1,4 +1,4 @@
-package com.wellnessmate.app
+package com.alpinefitness.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,19 +14,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.wellnessmate.app.data.AppContainer
-import com.wellnessmate.app.ui.AuthViewModel
-import com.wellnessmate.app.ui.OnboardingViewModel
-import com.wellnessmate.app.ui.FoodViewModel
-import com.wellnessmate.app.ui.SessionState
-import com.wellnessmate.app.ui.TrackerViewModel
-import com.wellnessmate.app.ui.CoachChatViewModel
-import com.wellnessmate.app.ui.HealthProfileViewModel
-import com.wellnessmate.app.ui.AiAdvisorViewModel
-import com.wellnessmate.app.ui.TrainingPlanViewModel
-import com.wellnessmate.app.ui.auth.LoginRegisterScreen
-import com.wellnessmate.app.ui.onboarding.OnboardingScreen
-import com.wellnessmate.app.ui.tracker.MainTrackerNav
+import com.alpinefitness.app.data.AppContainer
+import com.alpinefitness.app.ui.AuthViewModel
+import com.alpinefitness.app.ui.OnboardingViewModel
+import com.alpinefitness.app.ui.FoodViewModel
+import com.alpinefitness.app.ui.SessionState
+import com.alpinefitness.app.ui.TrackerViewModel
+import com.alpinefitness.app.ui.CoachChatViewModel
+import com.alpinefitness.app.ui.HealthProfileViewModel
+import com.alpinefitness.app.ui.AiAdvisorViewModel
+import com.alpinefitness.app.ui.TrainingPlanViewModel
+import com.alpinefitness.app.ui.auth.LoginRegisterScreen
+import com.alpinefitness.app.ui.onboarding.OnboardingScreen
+import com.alpinefitness.app.ui.tracker.MainTrackerNav
 
 /** Hosts the complete Android authentication, onboarding, and tracker flow. @author TODO(team member) */
 class MainActivity : ComponentActivity() {

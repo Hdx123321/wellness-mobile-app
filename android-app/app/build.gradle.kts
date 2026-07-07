@@ -17,11 +17,11 @@ val debugApiBaseUrl = providers.gradleProperty("API_BASE_URL")
     .orElse("http://10.0.2.2:18080/")
 
 android {
-    namespace = "com.wellnessmate.app"
+    namespace = "com.alpinefitness.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.wellnessmate.app"
+        applicationId = "com.alpinefitness.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

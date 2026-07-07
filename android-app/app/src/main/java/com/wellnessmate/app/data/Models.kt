@@ -1,4 +1,4 @@
-package com.wellnessmate.app.data
+package com.alpinefitness.app.data
 
 /** API request and response models for the Android core flow. @author TODO(team member) */
 data class RegisterRequest(

@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.food
+package com.alpinefitness.app.ui.food
 
 import android.Manifest
 import android.graphics.Bitmap
@@ -87,14 +87,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.wellnessmate.app.data.CatalogFoodItemRequest
-import com.wellnessmate.app.data.FoodCatalogItemResponse
-import com.wellnessmate.app.data.FoodEntryItemResponse
-import com.wellnessmate.app.data.FoodEntryResponse
-import com.wellnessmate.app.data.FoodNutrients
-import com.wellnessmate.app.ui.FoodViewModel
-import com.wellnessmate.app.ui.HealthProfileViewModel
-import com.wellnessmate.app.ui.components.WellnessIconButton
+import com.alpinefitness.app.data.CatalogFoodItemRequest
+import com.alpinefitness.app.data.FoodCatalogItemResponse
+import com.alpinefitness.app.data.FoodEntryItemResponse
+import com.alpinefitness.app.data.FoodEntryResponse
+import com.alpinefitness.app.data.FoodNutrients
+import com.alpinefitness.app.ui.FoodViewModel
+import com.alpinefitness.app.ui.HealthProfileViewModel
+import com.alpinefitness.app.ui.components.WellnessIconButton
 import coil3.compose.AsyncImage
 import java.io.File
 import java.time.Instant
@@ -127,7 +127,7 @@ fun FoodTrackerScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Food tracker", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
             if (state.loading) {
                 CircularProgressIndicator(modifier = Modifier.padding(24.dp))
@@ -160,11 +160,11 @@ fun FoodTrackerScreen(
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = { onAddFood(selectedDate, meal.name) }) {
-                                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_search), "Add food", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_search), "Add food", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                                 }
                                 if (selectedDate == LocalDate.now()) {
                                     IconButton(onClick = { onTakePhoto(selectedDate, meal.name) }) {
-                                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_photo), "Take photo", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_photo), "Take photo", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             }
@@ -300,7 +300,7 @@ fun FoodSelectionScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+            IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             Text("${selectedMeal.label}", style = MaterialTheme.typography.titleLarge)
         }
         Row(
@@ -336,7 +336,7 @@ fun FoodSelectionScreen(
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = { viewModel.search(query) }) {
-                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_search), "Search", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_search), "Search", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -563,7 +563,7 @@ private fun SelectedFoodsBottomSheet(
                             Text("${format(calories)} kcal", style = MaterialTheme.typography.bodySmall)
                         }
                         Text("${format(amount.toDoubleOrNull() ?: 0.0)} g")
-                        IconButton(onClick = { onRemove(food.id) }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
+                        IconButton(onClick = { onRemove(food.id) }) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                     }
                     HorizontalDivider()
                 }
@@ -924,7 +924,7 @@ fun FoodPhotoReviewScreen(
                             }
                         }
                         Text("Confidence ${format(item.confidence * 100)}%", style = MaterialTheme.typography.bodySmall)
-                        IconButton(onClick = { viewModel.removeAnalysisItem(index) }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
+                        IconButton(onClick = { viewModel.removeAnalysisItem(index) }) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                     }
                 }
             }
@@ -1043,7 +1043,7 @@ private fun FoodEntryCard(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                     )
-                    if (editable) IconButton(onClick = onDelete) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
+                    if (editable) IconButton(onClick = onDelete) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                 }
                 Text("${format(entry.totals.calories)} kcal", style = MaterialTheme.typography.bodyMedium)
                 Text(

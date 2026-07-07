@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.plan
+package com.alpinefitness.app.ui.plan
 
 import android.net.Uri
 import android.widget.VideoView
@@ -55,16 +55,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import com.wellnessmate.app.data.SessionUser
-import com.wellnessmate.app.data.TrainingPlanRequest
-import com.wellnessmate.app.data.TrainingPlanResponse
-import com.wellnessmate.app.data.WorkoutBlockRequest
-import com.wellnessmate.app.data.WorkoutBlockResponse
-import com.wellnessmate.app.ui.TrainingPlanViewModel
+import com.alpinefitness.app.data.SessionUser
+import com.alpinefitness.app.data.TrainingPlanRequest
+import com.alpinefitness.app.data.TrainingPlanResponse
+import com.alpinefitness.app.data.WorkoutBlockRequest
+import com.alpinefitness.app.data.WorkoutBlockResponse
+import com.alpinefitness.app.ui.TrainingPlanViewModel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.res.painterResource
-import com.wellnessmate.app.ui.components.WellnessIconButton
+import com.alpinefitness.app.ui.components.WellnessIconButton
 
 // ── Block editor state holder ──
 class BlockEditState(
@@ -112,7 +112,7 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
                         Text("Plans published by WellnessMate coaches")
                     }
                     if (user.role == "COACH") IconButton(onClick = { creating = true }) {
-                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "Publish training plan", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "Publish training plan", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
                 state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -172,7 +172,7 @@ private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel:
     LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
                 Text(plan.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
             }
             Text("Coach ${plan.coachName} · ${plan.difficulty} · ${plan.durationWeeks} weeks")
@@ -316,7 +316,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+            IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             Text(if (existing != null) "Edit plan" else "Publish training plan",
                 style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
         }
@@ -339,7 +339,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
                         Text("Block ${i + 1}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         TextButton(onClick = { if (i > 0) { val mv = blocks.removeAt(i); blocks.add(i - 1, mv) } }, enabled = i > 0) { Text("↑") }
                         TextButton(onClick = { if (i < blocks.size - 1) { val mv = blocks.removeAt(i); blocks.add(i + 1, mv) } }, enabled = i < blocks.size - 1) { Text("↓") }
-                        IconButton(onClick = { if (blocks.size > 1) blocks.removeAt(i) }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Remove block", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
+                        IconButton(onClick = { if (blocks.size > 1) blocks.removeAt(i) }) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_delete), "Remove block", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) }
                     }
                     OutlinedTextField(b.title, { b.title = it }, label = { Text("Title (e.g. Dumbbell Curls 4×12)") },
                         modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -388,7 +388,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
         }
         OutlinedButton(onClick = { blocks.add(BlockEditState.empty()) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(4.dp))
             Text("Add block")
         }

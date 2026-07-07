@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.tracker
+package com.alpinefitness.app.ui.tracker
 
 import android.Manifest
 import android.content.Context
@@ -63,11 +63,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.wellnessmate.app.data.TrackerEntryRequest
-import com.wellnessmate.app.data.TrackerEntryResponse
-import com.wellnessmate.app.reminder.ReminderScheduler
-import com.wellnessmate.app.reminder.ReminderSettings
-import com.wellnessmate.app.ui.TrackerViewModel
+import com.alpinefitness.app.data.TrackerEntryRequest
+import com.alpinefitness.app.data.TrackerEntryResponse
+import com.alpinefitness.app.reminder.ReminderScheduler
+import com.alpinefitness.app.reminder.ReminderSettings
+import com.alpinefitness.app.ui.TrackerViewModel
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.roundToInt
@@ -539,7 +539,7 @@ private fun LifestyleHeader(title: String, date: LocalDate, onBack: () -> Unit) 
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+        IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
         Text(
             title,
             style = MaterialTheme.typography.headlineMedium,

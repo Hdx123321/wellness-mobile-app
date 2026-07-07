@@ -1,4 +1,4 @@
-package com.wellnessmate.app.data
+package com.alpinefitness.app.data
 
 import retrofit2.HttpException
 import okhttp3.MediaType.Companion.toMediaType

@@ -1,11 +1,11 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.wellnessmate.app.data.AuthRepository
-import com.wellnessmate.app.data.SessionManager
-import com.wellnessmate.app.data.SessionUser
+import com.alpinefitness.app.data.AuthRepository
+import com.alpinefitness.app.data.SessionManager
+import com.alpinefitness.app.data.SessionUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

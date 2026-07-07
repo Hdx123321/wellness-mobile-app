@@ -1,4 +1,4 @@
-package com.wellnessmate.app.data
+package com.alpinefitness.app.data
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
