@@ -1,4 +1,4 @@
-package com.wellnessmate.app.reminder
+package com.alpinefitness.app.reminder
 
 import android.Manifest
 import android.app.AlarmManager
@@ -13,8 +13,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.wellnessmate.app.MainActivity
-import com.wellnessmate.app.R
+import com.alpinefitness.app.MainActivity
+import com.alpinefitness.app.R
 import java.util.Calendar
 
 data class ReminderSettings(

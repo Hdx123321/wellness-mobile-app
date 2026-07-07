@@ -1,12 +1,12 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.wellnessmate.app.data.CoachChatRepository
-import com.wellnessmate.app.data.CoachConversationResponse
-import com.wellnessmate.app.data.CoachMessageResponse
-import com.wellnessmate.app.data.SubscriberResponse
+import com.alpinefitness.app.data.CoachChatRepository
+import com.alpinefitness.app.data.CoachConversationResponse
+import com.alpinefitness.app.data.CoachMessageResponse
+import com.alpinefitness.app.data.SubscriberResponse
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

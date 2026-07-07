@@ -1,12 +1,12 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.wellnessmate.app.data.TrackerEntryRequest
-import com.wellnessmate.app.data.TrackerEntryResponse
-import com.wellnessmate.app.data.TrackerRepository
-import com.wellnessmate.app.data.TrackerTypeResponse
+import com.alpinefitness.app.data.TrackerEntryRequest
+import com.alpinefitness.app.data.TrackerEntryResponse
+import com.alpinefitness.app.data.TrackerRepository
+import com.alpinefitness.app.data.TrackerTypeResponse
 import java.time.LocalDate
 import java.time.Instant
 import java.time.YearMonth

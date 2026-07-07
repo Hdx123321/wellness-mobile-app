@@ -1,11 +1,11 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.wellnessmate.app.data.HealthProfileRepository
-import com.wellnessmate.app.data.ProfileResponse
-import com.wellnessmate.app.data.TrackerRepository
+import com.alpinefitness.app.data.HealthProfileRepository
+import com.alpinefitness.app.data.ProfileResponse
+import com.alpinefitness.app.data.TrackerRepository
 import java.time.LocalDate
 import java.time.Period
 import kotlin.math.roundToInt

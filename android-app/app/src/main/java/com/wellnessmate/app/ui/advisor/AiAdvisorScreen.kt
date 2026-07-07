@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.advisor
+package com.alpinefitness.app.ui.advisor
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -47,7 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.res.painterResource
 import com.mikepenz.markdown.m3.Markdown
-import com.wellnessmate.app.ui.AiAdvisorViewModel
+import com.alpinefitness.app.ui.AiAdvisorViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,7 +101,7 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
                                         renameId = session.id; renameDraft = session.title
                                     }) { Text("✏", style = MaterialTheme.typography.bodySmall) }
                                     IconButton(onClick = { viewModel.deleteSession(session.id) }) {
-                                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_delete), "Delete", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
                                     }
                                 }
                             },
@@ -115,7 +115,7 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("AI wellness advisor", style = MaterialTheme.typography.headlineMedium)
                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "Chats", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_more), "Chats", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Text("Uses your profile and recent tracker data. Guidance is informational, not diagnosis or emergency care.",

@@ -1,4 +1,4 @@
-package com.wellnessmate.app.data
+package com.alpinefitness.app.data
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

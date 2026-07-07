@@ -1,9 +1,9 @@
-package com.wellnessmate.app.data
+package com.alpinefitness.app.data
 
 import android.content.Context
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.wellnessmate.app.BuildConfig
+import com.alpinefitness.app.BuildConfig
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory

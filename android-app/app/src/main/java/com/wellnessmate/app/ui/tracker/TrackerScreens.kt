@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.tracker
+package com.alpinefitness.app.ui.tracker
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -68,31 +68,31 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.wellnessmate.app.R
-import com.wellnessmate.app.data.ProfileResponse
-import com.wellnessmate.app.data.SessionUser
-import com.wellnessmate.app.data.TrackerEntryRequest
-import com.wellnessmate.app.data.TrackerEntryResponse
-import com.wellnessmate.app.data.TrackerTypeResponse
-import com.wellnessmate.app.ui.TrackerViewModel
-import com.wellnessmate.app.ui.FoodViewModel
-import com.wellnessmate.app.ui.CoachChatViewModel
-import com.wellnessmate.app.ui.HealthProfileViewModel
-import com.wellnessmate.app.ui.AiAdvisorViewModel
-import com.wellnessmate.app.ui.TrainingPlanViewModel
-import com.wellnessmate.app.ui.advisor.AiAdvisorScreen
-import com.wellnessmate.app.ui.chat.CoachChatScreen
-import com.wellnessmate.app.ui.food.FoodCameraScreen
-import com.wellnessmate.app.ui.food.FoodPhotoReviewScreen
-import com.wellnessmate.app.ui.food.FoodSelectionScreen
-import com.wellnessmate.app.ui.food.FoodTrackerScreen
-import com.wellnessmate.app.ui.health.HealthProfileScreen
-import com.wellnessmate.app.ui.health.HealthSummaryCard
-import com.wellnessmate.app.ui.health.HeightPickerScreen
-import com.wellnessmate.app.ui.plan.TrainingPlanScreen
-import com.wellnessmate.app.ui.user.ReminderScreen
-import com.wellnessmate.app.ui.user.UserManagementScreen
-import com.wellnessmate.app.ui.components.WellnessIconButton
+import com.alpinefitness.app.R
+import com.alpinefitness.app.data.ProfileResponse
+import com.alpinefitness.app.data.SessionUser
+import com.alpinefitness.app.data.TrackerEntryRequest
+import com.alpinefitness.app.data.TrackerEntryResponse
+import com.alpinefitness.app.data.TrackerTypeResponse
+import com.alpinefitness.app.ui.TrackerViewModel
+import com.alpinefitness.app.ui.FoodViewModel
+import com.alpinefitness.app.ui.CoachChatViewModel
+import com.alpinefitness.app.ui.HealthProfileViewModel
+import com.alpinefitness.app.ui.AiAdvisorViewModel
+import com.alpinefitness.app.ui.TrainingPlanViewModel
+import com.alpinefitness.app.ui.advisor.AiAdvisorScreen
+import com.alpinefitness.app.ui.chat.CoachChatScreen
+import com.alpinefitness.app.ui.food.FoodCameraScreen
+import com.alpinefitness.app.ui.food.FoodPhotoReviewScreen
+import com.alpinefitness.app.ui.food.FoodSelectionScreen
+import com.alpinefitness.app.ui.food.FoodTrackerScreen
+import com.alpinefitness.app.ui.health.HealthProfileScreen
+import com.alpinefitness.app.ui.health.HealthSummaryCard
+import com.alpinefitness.app.ui.health.HeightPickerScreen
+import com.alpinefitness.app.ui.plan.TrainingPlanScreen
+import com.alpinefitness.app.ui.user.ReminderScreen
+import com.alpinefitness.app.ui.user.UserManagementScreen
+import com.alpinefitness.app.ui.components.WellnessIconButton
 import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -183,32 +183,32 @@ fun MainTrackerNav(
                     if (user.role == "COACH") {
                         TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                 Text("Plans", style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_message), "Messages", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_message), "Messages", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                 Text("Messages", style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     } else {
                         TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_home), "Home", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_home), "Home", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                 Text("Home", style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_cube), "AI Advisor", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_cube), "AI Advisor", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                 Text("AI Advisor", style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                 Text("Plans", style = MaterialTheme.typography.labelSmall)
                             }
                         }
@@ -595,7 +595,7 @@ private fun HomeScreen(
         }
         item {
             TextButton(onClick = viewModel::refresh, modifier = Modifier.fillMaxWidth()) {
-                Icon(painterResource(com.wellnessmate.app.R.drawable.ic_refresh), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_refresh), null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.refresh))
             }
@@ -684,14 +684,14 @@ private fun FoodHomeCard(
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_food), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_food), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(4.dp))
                         Text("Food", style = MaterialTheme.typography.titleMedium)
                     }
                     Text("${formatAmount(calories)} kcal")
                 }
                 IconButton(onClick = onOpen) {
-                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Row(
@@ -750,7 +750,7 @@ private fun WeightHomeCard(
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(com.wellnessmate.app.R.drawable.ic_weight), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_weight), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(4.dp))
                         Text("Weight", style = MaterialTheme.typography.titleMedium)
                     }
@@ -764,7 +764,7 @@ private fun WeightHomeCard(
                     }
                 }
                 IconButton(onClick = onOpen) {
-                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
             MiniWeightLineChart(trend, modifier = Modifier.padding(top = 8.dp))
@@ -789,12 +789,12 @@ private fun WorkoutHomeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_workout), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_workout), null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(4.dp))
                     Text("Workout", style = MaterialTheme.typography.titleMedium)
                 }
                 IconButton(onClick = onOpen) {
-                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_more), "View", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Row(
@@ -869,7 +869,7 @@ private fun TrackerDetailScreen(
                     Spacer(Modifier.width(6.dp))
                     Text(typeLabel(type), style = MaterialTheme.typography.headlineMedium)
                 }
-                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
             ErrorBanner(state.error, viewModel::clearError)
         }
@@ -1418,7 +1418,7 @@ private fun WeightTrendsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Weight Trends", style = MaterialTheme.typography.headlineMedium)
-                IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
             }
         }
 
@@ -1679,14 +1679,14 @@ fun ErrorBanner(error: String?, dismiss: () -> Unit) {
 private val PRIMARY_TRACKERS = listOf("FOOD", "WEIGHT", "WORKOUT")
 
 private fun trackerIconRes(type: String): Int = when (type) {
-    "FOOD" -> com.wellnessmate.app.R.drawable.ic_food
-    "WEIGHT" -> com.wellnessmate.app.R.drawable.ic_weight
-    "WORKOUT" -> com.wellnessmate.app.R.drawable.ic_workout
-    "STEPS" -> com.wellnessmate.app.R.drawable.ic_steps
-    "SLEEP" -> com.wellnessmate.app.R.drawable.ic_sleep
-    "WATER" -> com.wellnessmate.app.R.drawable.ic_water
-    "MEDICINE" -> com.wellnessmate.app.R.drawable.ic_medicine
-    else -> com.wellnessmate.app.R.drawable.ic_more
+    "FOOD" -> com.alpinefitness.app.R.drawable.ic_food
+    "WEIGHT" -> com.alpinefitness.app.R.drawable.ic_weight
+    "WORKOUT" -> com.alpinefitness.app.R.drawable.ic_workout
+    "STEPS" -> com.alpinefitness.app.R.drawable.ic_steps
+    "SLEEP" -> com.alpinefitness.app.R.drawable.ic_sleep
+    "WATER" -> com.alpinefitness.app.R.drawable.ic_water
+    "MEDICINE" -> com.alpinefitness.app.R.drawable.ic_medicine
+    else -> com.alpinefitness.app.R.drawable.ic_more
 }
 
 private fun typeLabel(type: String): String = type.lowercase().split('_')

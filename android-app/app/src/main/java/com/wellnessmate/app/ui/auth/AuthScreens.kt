@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.auth
+package com.alpinefitness.app.ui.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,8 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.wellnessmate.app.R
-import com.wellnessmate.app.ui.AuthViewModel
+import com.alpinefitness.app.R
+import com.alpinefitness.app.ui.AuthViewModel
 
 /** Login and registration entry point with explicit loading/error state. @author TODO(team member) */
 @Composable

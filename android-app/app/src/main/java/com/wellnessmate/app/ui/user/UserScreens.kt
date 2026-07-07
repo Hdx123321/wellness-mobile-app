@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.user
+package com.alpinefitness.app.ui.user
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -42,9 +42,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.wellnessmate.app.data.SessionUser
-import com.wellnessmate.app.reminder.ReminderScheduler
-import com.wellnessmate.app.reminder.ReminderSettings
+import com.alpinefitness.app.data.SessionUser
+import com.alpinefitness.app.reminder.ReminderScheduler
+import com.alpinefitness.app.reminder.ReminderSettings
 import kotlinx.coroutines.launch
 
 @Composable
@@ -96,7 +96,7 @@ fun ReminderScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = { showEditor = true }) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_settings), "Edit", tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = { showEditor = true }) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_settings), "Edit", tint = MaterialTheme.colorScheme.primary) }
                 Switch(checked = enabled, onCheckedChange = { saveToggle(it) })
             }
         }
@@ -219,7 +219,7 @@ private fun Header(title: String, onBack: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) { Icon(painterResource(com.wellnessmate.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
+        IconButton(onClick = onBack) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_back), "Back", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary) }
         Text(title, style = MaterialTheme.typography.headlineMedium)
     }
 }

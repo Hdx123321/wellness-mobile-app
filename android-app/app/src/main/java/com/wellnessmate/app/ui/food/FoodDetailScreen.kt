@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.food
+package com.alpinefitness.app.ui.food
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,8 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.wellnessmate.app.data.ServingSizeResponse
-import com.wellnessmate.app.ui.FoodViewModel
+import com.alpinefitness.app.data.ServingSizeResponse
+import com.alpinefitness.app.ui.FoodViewModel
 import java.time.LocalDate
 
 @Composable
@@ -116,7 +116,7 @@ fun FoodDetailBottomSheet(
 @Composable
 private fun FoodDetailContent(
     foodId: Long,
-    detail: com.wellnessmate.app.data.FoodDetailResponse,
+    detail: com.alpinefitness.app.data.FoodDetailResponse,
     onAdd: (Double) -> Unit,
 ) {
     val defaultSize = detail.servingSizes.firstOrNull { it.isDefault } ?: detail.servingSizes.firstOrNull()

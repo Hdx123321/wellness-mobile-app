@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui.chat
+package com.alpinefitness.app.ui.chat
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,12 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.wellnessmate.app.data.SessionUser
-import com.wellnessmate.app.ui.CoachChatViewModel
+import com.alpinefitness.app.data.SessionUser
+import com.alpinefitness.app.ui.CoachChatViewModel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.res.painterResource
-import com.wellnessmate.app.ui.components.WellnessIconButton
+import com.alpinefitness.app.ui.components.WellnessIconButton
 
 @Composable
 fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
@@ -83,7 +83,7 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
                     viewModel.refreshClients()
                     showNewChatDialog = true
                 }) {
-                    Icon(painterResource(com.wellnessmate.app.R.drawable.ic_plan), "New conversation", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "New conversation", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
