@@ -152,8 +152,9 @@ fun MainTrackerNav(
 
     Scaffold(
         topBar = {
-            if (route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR
-                && route != USER_MANAGEMENT && route != REMINDER && route != HEALTH_PROFILE && route != HEIGHT_PICKER) TopAppBar(
+            if ((route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR
+                && route != USER_MANAGEMENT && route != REMINDER && route != HEALTH_PROFILE && route != HEIGHT_PICKER)
+                || (user.role == "COACH" && route == PLANS)) TopAppBar(
                 title = {
                     IconButton(onClick = { navController.navigate(USER_MANAGEMENT) }) {
                         Surface(
@@ -172,8 +173,10 @@ fun MainTrackerNav(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { showDatePicker = true }) {
-                        Text("📅 ${selectedDate.monthValue}/${selectedDate.dayOfMonth}")
+                    if (user.role != "COACH") {
+                        TextButton(onClick = { showDatePicker = true }) {
+                            Text("📅 ${selectedDate.monthValue}/${selectedDate.dayOfMonth}")
+                        }
                     }
                 },
             )
@@ -199,6 +202,7 @@ fun MainTrackerNav(
                             navController.navigate(ADVISOR) { launchSingleTop = true }
                         }
                         BottomNavButton(com.alpinefitness.app.R.drawable.ic_plan, "Plans", route == PLANS, hasUnreadCoachMessages) {
+                            trainingPlanViewModel.select(null)
                             navController.navigate(PLANS) { launchSingleTop = true }
                         }
                     }

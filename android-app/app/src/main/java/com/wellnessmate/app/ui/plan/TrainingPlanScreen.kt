@@ -29,6 +29,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -126,7 +127,15 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel,
             val planList = state.plans
             items(planList.size, key = { planList[it].id }) { index ->
                 val plan = planList[index]
-                Card(Modifier.fillMaxWidth().padding(vertical = 7.dp).clickable { viewModel.select(plan) }) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp)
+                        .clickable { viewModel.select(plan) },
+                    colors = if (user.role == "CLIENT" && plan.subscribed) {
+                        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    } else {
+                        CardDefaults.cardColors()
+                    },
+                ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(plan.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
