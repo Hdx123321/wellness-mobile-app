@@ -1,5 +1,7 @@
 package com.alpinefitness.app.ui.chat
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +33,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.unit.dp
 import com.alpinefitness.app.data.SessionUser
 import com.alpinefitness.app.ui.CoachChatViewModel
@@ -47,6 +52,11 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
     var showNewChatDialog by rememberSaveable { mutableStateOf(false) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    DisposableEffect(Unit) {
+        viewModel.setChatVisible(true)
+        onDispose { viewModel.setChatVisible(false) }
+    }
 
     // New chat dialog for coaches
     if (showNewChatDialog) {
@@ -78,6 +88,7 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = user.role == "COACH",
         drawerContent = {
             ModalDrawerSheet {
                 Text("Conversations", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
@@ -95,6 +106,7 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
                     items(state.conversations, key = { it.id }) { conversation ->
                         NavigationDrawerItem(
                             label = { Text(conversation.subject ?: conversation.clientName) },
+                            badge = { if (conversation.unreadCount > 0) UnreadDot() },
                             selected = conversation.id == state.selectedConversationId,
                             onClick = {
                                 viewModel.selectConversation(conversation.id)
@@ -116,13 +128,15 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
-            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                Icon(
-                    painterResource(com.alpinefitness.app.R.drawable.ic_more_two),
-                    "Choose conversation",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
+            if (user.role == "COACH") {
+                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                    Icon(
+                        painterResource(com.alpinefitness.app.R.drawable.ic_more_two),
+                        "Choose conversation",
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
         state.error?.let {
@@ -176,4 +190,9 @@ fun CoachChatScreen(user: SessionUser, viewModel: CoachChatViewModel) {
         }
     }
     }
+}
+
+@Composable
+private fun UnreadDot() {
+    Box(Modifier.size(9.dp).background(Color(0xFFD32F2F), CircleShape))
 }

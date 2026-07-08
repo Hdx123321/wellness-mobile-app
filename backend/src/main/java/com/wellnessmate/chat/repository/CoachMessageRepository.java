@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CoachMessageRepository extends JpaRepository<CoachMessage, Long> {
   List<CoachMessage> findTop100ByConversationIdAndIdGreaterThanOrderByIdAsc(Long conversationId, Long afterId);
   Optional<CoachMessage> findFirstByConversationIdOrderByIdDesc(Long conversationId);
+  long countByConversationIdAndSenderIdNotAndIdGreaterThan(
+      Long conversationId, Long senderId, Long afterId);
 }

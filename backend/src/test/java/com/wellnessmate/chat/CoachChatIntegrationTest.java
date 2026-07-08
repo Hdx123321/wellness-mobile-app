@@ -52,12 +52,22 @@ class CoachChatIntegrationTest {
     mockMvc.perform(get("/api/coach-chat/conversations")
             .header("Authorization", bearer(coachToken)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].clientName").value("chat-client"));
+        .andExpect(jsonPath("$[0].clientName").value("chat-client"))
+        .andExpect(jsonPath("$[0].unreadCount").value(1));
 
     mockMvc.perform(get("/api/coach-chat/conversations/{id}/messages", conversationId)
             .header("Authorization", bearer(coachToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].content").value("Can we review today's plan?"));
+
+    mockMvc.perform(post("/api/coach-chat/conversations/{id}/read", conversationId)
+            .header("Authorization", bearer(coachToken)))
+        .andExpect(status().isNoContent());
+
+    mockMvc.perform(get("/api/coach-chat/conversations")
+            .header("Authorization", bearer(coachToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].unreadCount").value(0));
   }
 
   private String register(String username, String email) throws Exception {

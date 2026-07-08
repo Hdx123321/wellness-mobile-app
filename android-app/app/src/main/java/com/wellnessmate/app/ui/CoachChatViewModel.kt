@@ -27,18 +27,19 @@ data class CoachChatUiState(
 class CoachChatViewModel(private val repository: CoachChatRepository) : ViewModel() {
     private val _state = MutableStateFlow(CoachChatUiState())
     val state: StateFlow<CoachChatUiState> = _state.asStateFlow()
+    private var chatVisible = false
 
     init {
         refreshConversations()
         viewModelScope.launch {
             while (isActive) {
                 delay(3_000)
-                refreshMessages(silent = true)
+                refreshConversations(silent = true)
             }
         }
     }
 
-    fun refreshConversations() {
+    fun refreshConversations(silent: Boolean = false) {
         viewModelScope.launch {
             repository.conversations().fold(
                 onSuccess = { conversations ->
@@ -53,7 +54,9 @@ class CoachChatViewModel(private val repository: CoachChatRepository) : ViewMode
                     )
                     refreshMessages(silent = true)
                 },
-                onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
+                onFailure = {
+                    if (!silent) _state.value = _state.value.copy(loading = false, error = it.message)
+                },
             )
         }
     }
@@ -70,6 +73,24 @@ class CoachChatViewModel(private val repository: CoachChatRepository) : ViewMode
     fun selectConversation(id: Long) {
         _state.value = _state.value.copy(selectedConversationId = id, messages = emptyList())
         refreshMessages(silent = false)
+    }
+
+    fun setChatVisible(visible: Boolean) {
+        chatVisible = visible
+        if (visible) markSelectedRead()
+    }
+
+    fun markSelectedRead() {
+        val conversationId = _state.value.selectedConversationId ?: return
+        viewModelScope.launch {
+            repository.markRead(conversationId).onSuccess {
+                _state.value = _state.value.copy(
+                    conversations = _state.value.conversations.map {
+                        if (it.id == conversationId) it.copy(unreadCount = 0) else it
+                    },
+                )
+            }
+        }
     }
 
     fun createConversation(clientId: Long, subject: String?) {
@@ -99,6 +120,7 @@ class CoachChatViewModel(private val repository: CoachChatRepository) : ViewMode
                             messages = (_state.value.messages + incoming).distinctBy { it.id },
                             error = null,
                         )
+                        if (chatVisible) markSelectedRead()
                     }
                 },
                 onFailure = { if (!silent) _state.value = _state.value.copy(error = it.message) },

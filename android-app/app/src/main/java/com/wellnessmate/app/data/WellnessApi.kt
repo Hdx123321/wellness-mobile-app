@@ -117,6 +117,9 @@ interface WellnessApi {
         @Body request: CoachMessageRequest,
     ): CoachMessageResponse
 
+    @POST("api/coach-chat/conversations/{id}/read")
+    suspend fun markCoachConversationRead(@Path("id") conversationId: Long)
+
     @POST("api/coach-chat/conversations")
     suspend fun createCoachConversation(@Body request: CreateConversationRequest): CoachConversationResponse
 
