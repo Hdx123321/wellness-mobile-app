@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-07-08T21:24:36.114293",
+  "passed": 1,
+  "total": 1,
+  "results": [
+    {
+      "id": "delete_steps_confirm",
+      "group": "delete",
+      "description": "Delete requires confirmation and then removes entry",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Delete tracker entry #2680.",
+          "answer": "No data has changed yet. To confirm deleting tracker entry #2680, reply exactly: confirm E63FDBEC.",
+          "thinkingLength": 167,
+          "toolCalls": [
+            {
+              "name": "delete_tracker_entry",
+              "args": "{\"entry_id\": 2680}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "delete_tracker_entry",
+              "success": false
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 9.0
+        },
+        {
+          "prompt": "confirm E63FDBEC",
+          "answer": "Entry#2680hasbeendeleted.Isthereanythingelseyou'dlikemetohelpwith?",
+          "thinkingLength": 186,
+          "toolCalls": [
+            {
+              "name": "delete_tracker_entry",
+              "args": "{\"entry_id\": 2680, \"confirmation_token\": \"E63FDBEC\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "delete_tracker_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 3.9
+        }
+      ]
+    }
+  ]
+}

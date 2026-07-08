@@ -154,7 +154,7 @@ fun WorkoutTrackerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val profileState by healthProfileViewModel.state.collectAsState()
-    val weightKg = profileState.profile?.currentWeightKg ?: 70.0
+    val weightKg = profileState.metrics?.currentWeightKg ?: profileState.profile?.currentWeightKg ?: 70.0
 
     var showInputSheet by rememberSaveable { mutableStateOf(false) }
     var editingEntry by rememberSaveable { mutableStateOf<TrackerEntryResponse?>(null) }
@@ -541,7 +541,7 @@ fun WorkoutSelectionScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val profileState by healthProfileViewModel.state.collectAsState()
-    val weightKg = profileState.profile?.currentWeightKg ?: 70.0
+    val weightKg = profileState.metrics?.currentWeightKg ?: profileState.profile?.currentWeightKg ?: 70.0
     var query by rememberSaveable { mutableStateOf("") }
     var selectedCategory by rememberSaveable { mutableStateOf(workoutCategories.first()) }
     var selectedTypeKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -680,7 +680,7 @@ private fun LegacyWorkoutSelectionScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val profileState by healthProfileViewModel.state.collectAsState()
-    val weightKg = profileState.profile?.currentWeightKg ?: 70.0
+    val weightKg = profileState.metrics?.currentWeightKg ?: profileState.profile?.currentWeightKg ?: 70.0
     var selectedTypeKey by rememberSaveable { mutableStateOf<String?>(null) }
     var drafts by remember { mutableStateOf(emptyList<WorkoutDraft>()) }
 

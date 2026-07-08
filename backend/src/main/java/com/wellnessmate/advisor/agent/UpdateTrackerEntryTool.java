@@ -60,11 +60,21 @@ class UpdateTrackerEntryTool implements Tool {
     notes.put("type", "string");
     notes.put("description", "New notes. Omit to keep current. Pass empty string to clear notes.");
 
+    Map<String, Object> detail = new LinkedHashMap<>();
+    detail.put("type", "string");
+    detail.put("description", "New detail. Required for WORKOUT (workout type) and MEDICINE (medicine name). Omit to keep current. Pass empty string to clear detail only for tracker types that do not require detail.");
+
+    Map<String, Object> confirmationToken = new LinkedHashMap<>();
+    confirmationToken.put("type", "string");
+    confirmationToken.put("description", "Required only after the backend asks for confirmation. Use the exact token the user confirmed.");
+
     Map<String, Object> props = new LinkedHashMap<>();
     props.put("entry_id", entryId);
     props.put("amount", amount);
     props.put("recorded_date", date);
+    props.put("detail", detail);
     props.put("notes", notes);
+    props.put("confirmation_token", confirmationToken);
 
     schema.put("properties", props);
     schema.put("required", List.of("entry_id"));
@@ -95,9 +105,14 @@ class UpdateTrackerEntryTool implements Tool {
           + "to create a new one with the correct values.";
     }
 
-    BigDecimal amount = args.has("amount") && !args.path("amount").isNull()
-        ? new BigDecimal(args.path("amount").asText()).setScale(2, RoundingMode.HALF_UP)
-        : current.amount();
+    BigDecimal amount;
+    try {
+      amount = args.has("amount") && !args.path("amount").isNull()
+          ? new BigDecimal(args.path("amount").asText()).setScale(2, RoundingMode.HALF_UP)
+          : current.amount();
+    } catch (NumberFormatException e) {
+      return "Error: amount must be a numeric value in the tracker unit for " + current.type().name();
+    }
 
     Instant recordedAt = parseDate(args, current);
 
@@ -109,15 +124,42 @@ class UpdateTrackerEntryTool implements Tool {
       notes = current.notes();
     }
 
+    String detail;
+    if (args.has("detail")) {
+      JsonNode d = args.path("detail");
+      detail = d.isNull() || d.asText().isEmpty() ? null : d.asText().trim();
+    } else {
+      detail = current.detail();
+    }
+
     try {
       var result = tracker.update(userId, entryId,
-          new TrackerEntryRequest(current.type(), recordedAt, amount, null, notes));
+          new TrackerEntryRequest(current.type(), recordedAt, amount, detail, notes));
       return "Updated entry #" + result.id() + ": " + result.type().name()
           + " " + result.amount() + result.type().unit()
           + " on " + result.recordedAt();
     } catch (Exception e) {
       return "Error updating entry #" + entryId + ": " + e.getMessage();
     }
+  }
+
+  String preflight(Long userId, JsonNode args) {
+    long entryId = args.path("entry_id").asLong(0);
+    if (entryId <= 0) {
+      return "Error: entry_id is required";
+    }
+    TrackerEntryResponse current;
+    try {
+      current = tracker.get(userId, entryId);
+    } catch (Exception e) {
+      return "Error: entry #" + entryId + " not found or not accessible. " + e.getMessage();
+    }
+    if (current.type() == TrackerType.FOOD) {
+      return "Error: Food entries cannot be updated in-place because they contain "
+          + "item-level nutrition details. To modify a food entry, delete the old entry "
+          + "and create a new food entry with the corrected items after the user confirms.";
+    }
+    return null;
   }
 
   private Instant parseDate(JsonNode args, TrackerEntryResponse current) {

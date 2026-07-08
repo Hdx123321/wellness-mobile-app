@@ -1,0 +1,110 @@
+{
+  "generatedAt": "2026-07-08T22:34:23.140841",
+  "passed": 3,
+  "total": 3,
+  "results": [
+    {
+      "id": "update_height_profile",
+      "group": "profile",
+      "description": "Update profile height instead of refusing",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Update my height to 188.",
+          "answer": "Done!Yourheighthasbeenupdatedfrom**185cm\u2192188cm**.Yourotherprofilestatsremainthesame:currentweight69.3kg,targetweight75.0kg,andactivitylevelHIGH.",
+          "thinkingLength": 219,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"height_cm\": 188}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 14.8
+        }
+      ]
+    },
+    {
+      "id": "query_height_after_external_change",
+      "group": "profile",
+      "description": "Read latest profile height instead of stale chat history",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Update my height to 188.",
+          "answer": "Yourheighthasbeenupdatedfrom185cmto**188cm**.Everythingelse\u2014startingweight(69.30kg),targetweight(75.00kg),andactivitylevel(HIGH)\u2014remainsunchanged.",
+          "thinkingLength": 191,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"height_cm\": 188}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 10.5
+        },
+        {
+          "prompt": "what's my height",
+          "answer": "Yourcurrentheightis**183.5cm**,accordingtoyourstoredprofile.Itlookslikeyourheightmayhavebeenrevertedatsomepoint\u2014thehistoricalnotesIseesuggestitwaspreviouslysetto188cm,buttheauthoritativeprofilenowshows183.5cm.Wouldyoulikemetoupdateitbackto188cm?",
+          "thinkingLength": 378,
+          "toolCalls": [
+            {
+              "name": "query_profile",
+              "args": "{}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 6.4
+        }
+      ]
+    },
+    {
+      "id": "update_current_weight_syncs_tracker",
+      "group": "profile",
+      "description": "Updating current weight should affect Health profile weight card",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "update my weight to 69.3kg",
+          "answer": "Done!Here'sasummaryoftheupdate:|Detail|Value||---|---||**Newcurrentweight**|**69.3kg**||Entrylogged|WEIGHT#2688||Startingweight(baseline)|69.3kg*(unchanged)*||Targetweight|75.0kg||Gaptotarget|+5.7kg|Yourcurrentweightnowmatchesyouroriginalstartingweightof69.3kg,andyou'resittingabout5.7kgbelowyour75kgtarget.Letmeknowifyou'dliketoadjustyourtargetortalkstrategyforclosingthatgap!",
+          "thinkingLength": 703,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"current_weight_kg\": 69.3}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 13.9
+        }
+      ]
+    }
+  ]
+}

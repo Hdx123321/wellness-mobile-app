@@ -38,6 +38,7 @@ public class RagRetrievalService {
   private static final Logger log = LoggerFactory.getLogger(RagRetrievalService.class);
   private static final int SEMANTIC_TOP_K = 5;
   private static final int STRUCTURED_DAYS = 30;
+  private static final int SEMANTIC_CANDIDATE_LIMIT = 80;
 
   private final RagDocumentRepository ragDocuments;
   private final TrackerEntryRepository trackerEntries;
@@ -66,32 +67,43 @@ public class RagRetrievalService {
    */
   public String retrieve(Long userId, String question) {
     StringBuilder context = new StringBuilder();
+    RetrievalIntent intent = classifyIntent(question);
+
+    context.append("=== Retrieved Wellness Context ===\n")
+        .append("Use raw recent data as the most reliable source. Historical summaries are memory aids, ")
+        .append("not current facts. Mention uncertainty when sources are old, summarized, or incomplete.\n")
+        .append("retrieval_intent=").append(intent.name()).append("\n\n");
 
     // 1. Semantic retrieval
-    try {
+    if (intent.includeSemanticSearch()) {
+      try {
       float[] questionEmbedding = embeddingClient.embed(question);
-      List<RagDocument> docs = ragDocuments.findByUserIdOrderByCreatedAtDesc(userId);
+      List<RagDocument> docs = ragDocuments.findTop80ByUserIdOrderByCreatedAtDesc(userId).stream()
+          .filter(doc -> intent.allows(doc))
+          .limit(SEMANTIC_CANDIDATE_LIMIT)
+          .toList();
       if (!docs.isEmpty()) {
         List<RagDocument> topDocs = rankBySimilarity(docs, questionEmbedding, SEMANTIC_TOP_K);
         if (!topDocs.isEmpty()) {
-          context.append("=== Relevant Historical Summaries ===\n");
+          context.append("=== Historical Summaries (semantic recall) ===\n");
           for (RagDocument doc : topDocs) {
-            context.append("[").append(doc.getDocType()).append("] ")
-                .append(doc.getTitle()).append(": ")
-                .append(doc.getContent()).append("\n\n");
+            appendDocumentContext(context, doc);
           }
         }
       }
-    } catch (Exception e) {
-      log.warn("Semantic retrieval failed for user {}, falling back to structured only: {}",
-          userId, e.getMessage());
+      } catch (Exception e) {
+        log.warn("Semantic retrieval failed for user {}, falling back to structured only: {}",
+            userId, e.getMessage());
+      }
     }
 
     // 2. Structured retrieval (30-day aggregation with anomalies)
     try {
       String structured = buildStructuredContext(userId);
       if (!structured.isBlank()) {
-        context.append("=== Recent Data (30 days) ===\n");
+        context.append("=== Raw Recent Tracker Data ===\n");
+        context.append("source=tracker_entries, window_days=").append(STRUCTURED_DAYS)
+            .append(", generated_at=").append(Instant.now()).append("\n");
         context.append(structured);
       }
     } catch (Exception e) {
@@ -99,6 +111,103 @@ public class RagRetrievalService {
     }
 
     return context.toString();
+  }
+
+  private void appendDocumentContext(StringBuilder context, RagDocument doc) {
+    Map<String, String> metadata = metadata(doc);
+    context.append("source_doc_id=").append(doc.getId())
+        .append(", doc_type=").append(doc.getDocType())
+        .append(", source_key=").append(doc.getSourceKey())
+        .append(", title=\"").append(doc.getTitle()).append("\"")
+        .append(", created_at=").append(doc.getCreatedAt());
+    appendMetadata(context, metadata, "coveredFrom");
+    appendMetadata(context, metadata, "coveredTo");
+    appendMetadata(context, metadata, "weekStart");
+    appendMetadata(context, metadata, "weekEnd");
+    appendMetadata(context, metadata, "month");
+    appendMetadata(context, metadata, "year");
+    appendMetadata(context, metadata, "sessionId");
+    appendMetadata(context, metadata, "sourceScope");
+    appendMetadata(context, metadata, "summarySchemaVersion");
+    appendMetadata(context, metadata, "structuredStats");
+    context.append("\nsummary=").append(doc.getContent()).append("\n\n");
+  }
+
+  private void appendMetadata(StringBuilder context, Map<String, String> metadata, String key) {
+    String value = metadata.get(key);
+    if (value != null && !value.isBlank()) {
+      context.append(", ").append(key).append("=").append(value);
+    }
+  }
+
+  private Map<String, String> metadata(RagDocument doc) {
+    if (doc.getMetadata() == null || doc.getMetadata().isBlank()) return Map.of();
+    try {
+      Map<String, Object> raw = mapper.readValue(doc.getMetadata(),
+          new TypeReference<Map<String, Object>>() {});
+      Map<String, String> result = new LinkedHashMap<>();
+      raw.forEach((key, value) -> {
+        if (value != null) result.put(key, value.toString());
+      });
+      return result;
+    } catch (Exception e) {
+      return Map.of();
+    }
+  }
+
+  private RetrievalIntent classifyIntent(String question) {
+    String q = question == null ? "" : question.toLowerCase();
+    if (containsAny(q, "record", "log", "save", "track", "delete", "remove", "update", "change", "fix")) {
+      return RetrievalIntent.ACTION;
+    }
+    if (containsAny(q, "previously", "before", "earlier", "last time", "we discussed", "we talked",
+        "conversation", "remember", "之前", "上次", "聊过", "记得")) {
+      return RetrievalIntent.CONVERSATION_MEMORY;
+    }
+    if (containsAny(q, "month", "months", "long term", "long-term", "trend over", "overall",
+        "history", "historical", "长期", "几个月", "历史", "总体")) {
+      return RetrievalIntent.LONG_TERM;
+    }
+    if (containsAny(q, "today", "recent", "recently", "this week", "last 7", "last week",
+        "最近", "今天", "本周", "这周", "上周")) {
+      return RetrievalIntent.RECENT;
+    }
+    return RetrievalIntent.GENERAL;
+  }
+
+  private boolean containsAny(String text, String... needles) {
+    for (String needle : needles) {
+      if (text.contains(needle)) return true;
+    }
+    return false;
+  }
+
+  private enum RetrievalIntent {
+    ACTION {
+      @Override boolean includeSemanticSearch() { return false; }
+      @Override boolean allows(RagDocument doc) { return false; }
+    },
+    RECENT {
+      @Override boolean allows(RagDocument doc) {
+        return "WEEKLY_REPORT".equals(doc.getDocType());
+      }
+    },
+    LONG_TERM {
+      @Override boolean allows(RagDocument doc) {
+        return "WEEKLY_REPORT".equals(doc.getDocType()) || "MONTHLY_REPORT".equals(doc.getDocType());
+      }
+    },
+    CONVERSATION_MEMORY {
+      @Override boolean allows(RagDocument doc) {
+        return "CONVERSATION_SUMMARY".equals(doc.getDocType());
+      }
+    },
+    GENERAL {
+      @Override boolean allows(RagDocument doc) { return true; }
+    };
+
+    boolean includeSemanticSearch() { return true; }
+    abstract boolean allows(RagDocument doc);
   }
 
   /**

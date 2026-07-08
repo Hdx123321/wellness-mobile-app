@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-07-08T21:19:00.974602",
+  "passed": 0,
+  "total": 1,
+  "results": [
+    {
+      "id": "delete_steps_confirm",
+      "group": "delete",
+      "description": "Delete requires confirmation and then removes entry",
+      "passed": false,
+      "problems": [
+        "first turn did not expose a confirmation token",
+        "entry still accessible or unexpected status: HTTP 200 {'id': 2674, 'type': 'STEPS', 'recordedAt': '2026-07-08T11:17:58Z', 'amount': 4321.0, 'unit': 'steps', 'detail': None, 'notes': 'AGENT_EVAL_DO_NOT_KEEP delete_steps', 'source': 'MANUAL', 'version': 0}"
+      ],
+      "turns": [
+        {
+          "prompt": "Delete tracker entry #2674.",
+          "answer": "Nodata",
+          "thinkingLength": 277,
+          "toolCalls": [
+            {
+              "name": "delete_tracker_entry",
+              "args": "{\"entry_id\": 2674}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "delete_tracker_entry",
+              "success": false
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 62.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-07-08T20:39:07.021435",
+  "passed": 1,
+  "total": 1,
+  "averageScore": 1.0,
+  "results": [
+    {
+      "id": "ask_average_sleep",
+      "question": "What is my average sleep over the last 30 days?",
+      "answer": "Your**averagesleepoverthelast30daysis439minutes\u2014that's7hoursand19minutes**pernight,across29trackednights.Here'saquicksnapshot:|Metric|Value||---|---||**Average**|7h19m||**Lowest**|6h24m||**Highest**|8h36m(#2449,June10\u2014duringyourdeloadweek)||**Trend**|\u2192Stable||**Variability**|\u00b135min(prettyconsistent)|Thisissolidforsomeonewithahighactivitylevel,thoughit'sstilljustshyofthe7.5\u20138hourrangethattendstooptimizerecoveryforstrengthtraining.Yoursleephascomealongwayfromthestressweekinmid-Maywhereyoudippedbelow5hours\u2014sothat'srealprogress.Keepprotectingthatbedtime!",
+      "thinkingLength": 789,
+      "toolCalls": [
+        {
+          "name": "query_tracker_data",
+          "args": "{\"tracker_type\": \"SLEEP\", \"days\": 30}"
+        }
+      ],
+      "toolResults": [
+        {
+          "name": "query_tracker_data",
+          "success": true
+        }
+      ],
+      "evaluation": {
+        "score": 1.0,
+        "passed": true,
+        "hits": [
+          "sleep",
+          "average"
+        ],
+        "misses": [],
+        "forbiddenHits": [],
+        "requiredTool": "query_tracker_data",
+        "toolNames": [
+          "query_tracker_data"
+        ],
+        "toolOk": true,
+        "errors": []
+      }
+    }
+  ]
+}

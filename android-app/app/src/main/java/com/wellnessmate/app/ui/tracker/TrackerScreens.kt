@@ -574,7 +574,7 @@ private fun HomeScreen(
                 val workoutEntries = state.entries.filter {
                     it.type == "WORKOUT" && entryDate(it) in weekStart..weekEnd
                 }
-                val weightKg = profileState.profile?.currentWeightKg ?: 70.0
+                val weightKg = profileState.metrics?.currentWeightKg ?: profileState.profile?.currentWeightKg ?: 70.0
                 val caloriesByDay = (0L..6L).map { offset ->
                     val date = weekStart.plusDays(offset)
                     date to workoutEntries.filter { entryDate(it) == date }

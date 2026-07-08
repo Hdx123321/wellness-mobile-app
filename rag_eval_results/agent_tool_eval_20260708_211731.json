@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-07-08T21:17:31.104978",
+  "passed": 1,
+  "total": 1,
+  "results": [
+    {
+      "id": "update_weight_confirm",
+      "group": "update",
+      "description": "Update requires confirmation and then changes value",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Change tracker entry #2673 to 77.7 kg.",
+          "answer": "Nodatahasbeenchangedyet.Toconfirmupdatingentry**#2673**to**77.7kg**,pleasereplyexactly:**confirm4B483389**Onceyouconfirm,I'llapplythechangerightaway.",
+          "thinkingLength": 370,
+          "toolCalls": [
+            {
+              "name": "update_tracker_entry",
+              "args": "{\"entry_id\": 2673, \"amount\": 77.7}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_tracker_entry",
+              "success": false
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 20.1
+        },
+        {
+          "prompt": "confirm 4B483389",
+          "answer": "Done!Entry**#2673**hasbeenupdatedto**77.7kg**(recorded2026-07-08).Thatputsyoujust**0.3kg**awayfromyourtargetof78.0kg\u2014you'repracticallythere.Nicework!",
+          "thinkingLength": 229,
+          "toolCalls": [
+            {
+              "name": "update_tracker_entry",
+              "args": "{\"entry_id\": 2673, \"amount\": 77.7, \"confirmation_token\": \"4B483389\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_tracker_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 5.5
+        }
+      ]
+    }
+  ]
+}

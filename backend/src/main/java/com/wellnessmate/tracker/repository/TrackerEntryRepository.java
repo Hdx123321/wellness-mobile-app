@@ -17,6 +17,9 @@ public interface TrackerEntryRepository extends JpaRepository<TrackerEntry, Long
   Optional<TrackerEntry> findFirstByUserIdAndTrackerTypeAndRecordedAtGreaterThanEqualAndRecordedAtLessThanOrderByIdAsc(
       Long userId, TrackerType trackerType, Instant from, Instant to);
 
+  Optional<TrackerEntry> findFirstByUserIdAndTrackerTypeOrderByRecordedAtDescIdDesc(
+      Long userId, TrackerType trackerType);
+
   @Query("""
       select entry from TrackerEntry entry
       where entry.userId = :userId

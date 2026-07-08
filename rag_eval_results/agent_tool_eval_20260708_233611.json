@@ -1,0 +1,406 @@
+{
+  "generatedAt": "2026-07-08T23:36:11.043042",
+  "passed": 13,
+  "total": 13,
+  "results": [
+    {
+      "id": "query_latest_weight",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "What is my latest recorded weight?",
+          "answer": "Your**latestrecordedweight**is**76.10kg**,loggedon**July7,2026**(morningweigh-in).\\n\\nHere'saquicksnapshotofyourrecentweighttrend:\\n\\n|Date|Weight|Change|\\n|------|--------|--------|\\n|Jul7|76.10kg|+0.10kg|\\n|Jul5|76.00kg|+0.60kg|\\n|Jul2|75.40kg|\u22120.50kg|\\n|Jun29|75.90kg|+0.50kg|\\n|Jun26|75.40kg|+0.20kg|\\n|Jun23|75.20kg|+0.60kg|\\n\\n**Summary:**Yourweightoverthelast30dayshasaveraged**75.15kg**withastabletrend(\u2192),rangingfrom74.00to76.10kg.You'recurrentlysittingrightatthetopofthatrangeandjustaboveyourtargetof75.00kg\u2014nothingtoworryaboutwithnormaldailyfluctuation.",
+          "thinkingLength": 516,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"WEIGHT\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 13.8
+        }
+      ]
+    },
+    {
+      "id": "query_average_sleep_30d",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "What is my average sleep over the last 30 days?",
+          "answer": "##YourSleep\u2014Last30Days\\n\\n|Metric|Value|\\n|---|---|\\n|**Entries**|29nights|\\n|**Average**|**439min(7h19m)**|\\n|**Shortest**|384min(6h24m)|\\n|**Longest**|516min(8h36m)|\\n|**StdDev**|35min|\\n|**Trend**|\u2192Flat|\\n\\n###Whatthismeans\\n\\nYouraverageof**7h19m**isrightattheloweredgeofthe7\u20139hourrangerecommendedforadults.Givenyourprofile\u2014**HIGHactivitylevel**,currently76.1kgwithatargetof75kg\u2014yourbodyisundersignificanttrainingstress,andsleepiswhenmostmusclerepairhappens.\\n\\nYou'reonlyabout**11minutesshy**ofthe7h30mminimumthatwassuggestedinapreviouscheck-in.Afewpracticalnudges:\\n\\n-**Aimfor7h30m\u20138h**\u2014just15\u201320minutesmorepernight.That'sroughlyonelesslate-nightscrolloraslightlyearlierwind-down.\\n-**Consistencymattersmorethanonelongnight.**Yourstandarddeviationof35minutesisreasonable,butnightsdippingintothe380\u2013400minuterange(6h20m\u20136h40m)areworthwatching.\\n-**The516-minuteoutlier**(June10)wasflaggedduringaplanneddeloadweek,soit'snotaconcern\u2014itactuallyshowsyourbodycancatchupwhenloaddrops.\\n\\nWouldyoulikesomepracticalwind-downtipsorhelpsettingatargetbedtimebasedonyourdailyroutine?",
+          "thinkingLength": 1178,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"SLEEP\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 23.3
+        }
+      ]
+    },
+    {
+      "id": "query_steps_last_week",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "How many steps did I average in the last 7 days?",
+          "answer": "Overthelast7days(July2\u2013July8),yourstepaverageis**10,860steps/day**\u2014solidandaboveyour30-dayaverageof~9,756.Here'stheday-by-daybreakdown:\\n\\n|Date|Steps|\\n|---|---|\\n|Jul2|10,957|\\n|Jul3|10,391|\\n|Jul4|9,923|\\n|Jul5|10,803|\\n|Jul6|9,995|\\n|Jul7|11,956|\\n|Jul8|11,992|\\n\\n**Keytakeaway:**You'reconsistentlyabove9,900andtrendingstrong.Everydayinthiswindowhitthe\"strengthpeak\"zone\u2014nolowdaysdetected.That'sagreatweekforyourHIGHactivityprofile.Keepitup!",
+          "thinkingLength": 321,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"STEPS\", \"days\": 7}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 16.2
+        }
+      ]
+    },
+    {
+      "id": "query_food_recent",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "What food have I logged recently?",
+          "answer": "Here'syourfoodlogfromthepastweek.You'vebeenremarkablyconsistent\u2014samefourmealseveryday:\\n\\n###\ud83d\uddd3\ufe0fLast7DaysataGlance\\n\\n|Date|Meal|Food|Calories|Protein|\\n|------|------|------|----------|---------|\\n|**Jul7**|Breakfast|Oats,banana,wheyprotein|649|35g|\\n||Lunch|Chickenricebowlwithvegetables|949|51g|\\n||Snack|Greekyogurtandtrailmix|449|25g|\\n||Dinner|Salmon,potatoes,salad|1,024|48g|\\n|**Jul6**|Breakfast|Oats,banana,wheyprotein|632|35g|\\n||Lunch|Chickenricebowlwithvegetables|923|50g|\\n||Snack|Greekyogurtandtrailmix|437|25g|\\n||Dinner|Salmon,potatoes,salad|996|48g|\\n|**Jul5**|Breakfast|Oats,banana,wheyprotein|634|36g|\\n||Lunch|Chickenricebowlwithvegetables|926|52g|\\n||Snack|Greekyogurtandtrailmix|439|26g|\\n||Dinner|Salmon,potatoes,salad|999|49g|\\n|**Jul4**|Breakfast|Oats,banana,wheyprotein|621|38g|\\n||Lunch|Chickenricebowlwithvegetables|908|55g|\\n||Snack|Greekyogurtandtrailmix|430|27g|\\n||Dinner|Salmon,potatoes,salad|980|52g|\\n|**Jul3**|Breakfast|Oats,banana,wheyprotein|632|40g|\\n||Lunch|Chickenricebowlwithvegetables|924|58g|\\n||Snack|Greekyogurtandtrailmix|438|28g|\\n||Dinner|Salmon,potatoes,salad|997|55g|\\n|**Jul2**|Breakfast|Oats,banana,wheyprotein|592|37g|\\n||Lunch|Chickenricebowlwithvegetables|865|53g|\\n||Snack|Greekyogurtandtrailmix|410|26g|\\n||Dinner|Salmon,potatoes,salad|933|51g|\\n|**Jul1**|Snack|Greekyogurtandtrailmix|446|30g|\\n||Dinner|Salmon,potatoes,salad|1,016|58g|\\n\\n###\ud83d\udccaWeeklyAverages\\n\\n|Metric|PerMeal|PerDay|\\n|--------|----------|---------|\\n|**Calories**|~740kcal|~2,990kcal|\\n|**Protein**|\u2014|~188g|\\n\\nYourdailyintakeishoveringaround**2,990kcal**,whichissolidforyour**HIGHactivitylevel**at76.1kg.Theconsistentmealprepisclearlypayingoff\u2014greatdiscipline!\ud83d\udcaa\\n\\nWanttologsomethingneworchangeanyoftheseentries?",
+          "thinkingLength": 670,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"FOOD\", \"days\": 7}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 19.2
+        }
+      ]
+    },
+    {
+      "id": "query_workout_count",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "How many workout entries do I have in the last 14 days?",
+          "answer": "Youhave**11workoutentries**inthelast14days(June24\u2013July8).\\n\\nHere'saquicksummary:\\n\\n|Stat|Value|\\n|------|-------|\\n|**Totalentries**|11|\\n|**Averageduration**|67min|\\n|**Shortest**|30min(July8,swimming)|\\n|**Longest**|91min(July4,enduranceride)|\\n|**Trend**|\u2191(increasing)|\\n\\nThat'sasolid5\u20136workoutsperweek\u2014rightinlinewithyour**HIGH**activitylevel.Themixofstrengthwork,runs,rides,andswimmingshowsgoodvariety.Keepitup!",
+          "thinkingLength": 215,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"WORKOUT\", \"days\": 14}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 12.1
+        }
+      ]
+    },
+    {
+      "id": "query_water_extreme_window",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Summarize my water intake over the last 365 days.",
+          "answer": "##\ud83d\udca7WaterIntakeSummary\u2014Last365Days\\n\\nHere'syouryear-longhydrationpicturebasedon**90loggedentries**:\\n\\n|Metric|Value|\\n|---|---|\\n|**Average**|2,077ml/day|\\n|**Minimum**|1,221ml|\\n|**Maximum**|2,898ml|\\n|**StdDeviation**|\u00b1406ml|\\n|**OverallTrend**|\ud83d\udcc8Increasing|\\n\\n---\\n\\n###\ud83d\udd0dKeyPatterns\\n\\n-Your**recent30-dayaverage**(~2,447ml)sitswellabovethe365-dayaverageof~2,077ml,confirmingasteadyupwardtrajectory.That'sasolidimprovement\u2014roughly**+370ml/day**inrecentmonths.\\n\\n-**Consistencyhasimproved.**Overthefullyear,thespread(stddevof~406ml)reflectssomewideswings,butyourrecentweeksaretighterandconsistentlyabove2,000ml.\\n\\n###\u26a0\ufe0fNotableAnomalies\\n\\n|Date|Volume|Notes|\\n|---|---|---|\\n|May15,2026|1,245ml|Low\u2014stressfulworkweek,poorsleep|\\n|May16,2026|1,221ml|Low(year'sminimum)\u2014samestressfulperiod|\\n|May19,2026|1,228ml|Low\u2014samestressfulperiod|\\n|July5,2026|2,898ml|High(year'smaximum)\u2014strengthpeakphase|\\n\\nThemid-Mayclusteroflows(allthreewithin5days)linesupwithadocumentedstressfulworkweek\u2014hydrationtendstodipwhenstressandpoorsleepconverge.TheJuly5highalignswithyourcurrentstrengthpeakphaseandyouroverallrisingtrend.\\n\\n---\\n\\n###\ud83e\uddedGeneralGuidance\\n\\nAt**2,077ml/day**averageand**HIGHactivitylevel**,you'renearthelowerendofthe2.0\u20133.0Lrangetypicallysuggestedforactiveindividuals.Yourrecent**2,447ml**averageisrightinthesweetspot.Keepdoingwhatyou'redoinglately\u2014it'sworkingwell.Ifyounoticeanotherstress/low-sleepstretch,beextramindfulofwater,asthatMaydipshowshydrationcanbeoneofthefirstthingstoslip.\\n\\n*Note:Thissummarycovers90daysofdataovera365-daywindow\u2014about25%ofdaysarelogged,sothepicturemaynotcaptureeveryvariation.*",
+          "thinkingLength": 652,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"WATER\", \"days\": 365}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 26.8
+        }
+      ]
+    },
+    {
+      "id": "query_medicine_empty",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Do I have any medicine entries recently?",
+          "answer": "**Nomedicineentries**inthelast30days.YourMEDICINEtrackerisemptyforthatperiod.\\n\\nIfyou'dliketologanymedicationsorsupplements,justtellmethename,dosage,anddateandI'llrecorditforyou.",
+          "thinkingLength": 157,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"MEDICINE\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 12.9
+        }
+      ]
+    },
+    {
+      "id": "query_specific_stress_week",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "What happened to my sleep and steps around May 13 to May 19?",
+          "answer": "Here'swhatyourtrackershowsfor**May13\u201319,2026**:\\n\\n---\\n\\n##\ud83d\ude34Sleep\u2014ARoughWeek\\n\\nEverysinglenightthatweekwasflaggedasa**lowanomaly**.Youaveragedjust**~4h39m**ofsleep,wellbelowyour90-dayaverageof~6h41mandfarfromthe7\u20138hrecommendedforsomeonewithHIGHactivity.\\n\\n|Date|Sleep|vs.90-DayAvg(401min)|\\n|------|-------|---------------------------|\\n|May13|268min(4h28m)|\u2b07133min|\\n|May14|283min(4h43m)|\u2b07118min|\\n|May15|298min(4h58m)|\u2b07103min|\\n|May16|274min(4h34m)|\u2b07127min|\\n|May17|280min(4h40m)|\u2b07121min|\\n|May18|295min(4h55m)|\u2b07106min|\\n|May19|256min(4h16m)|\u2b07145min\u2014**lowestoftheyear**|\\n\\nAllsevenentriescarrythesameannotation:**\"volumeincrease;stressfulworkweek,poorsleep.\"**\\n\\n---\\n\\n##\ud83d\udc63Steps\u2014Mixed,withOneBigDip\\n\\nStepdataforthefullweekisn'tindividuallyflaggedasidefromonestandout:\\n\\n|Date|Steps|Flag|\\n|------|-------|------|\\n|**May17**|**3,955**|\u26a0Lowanomaly\u2014lessthanhalfyour90-dayavg(8,814)|\\n\\nMay17sharesthesamenote:*\"volumeincrease;stressfulworkweek,poorsleep.\"*Thatdaylikelyreflectsthecumulativetollofthesleepdeficit\u2014poorrestbleedingintolowmovement.\\n\\n---\\n\\n##\ud83d\udd0dTheBigPicture\\n\\nThatweeklookslikeaclassicstress-and-recoverycrunch:\\n\\n-A**trainingvolumeincrease**coincidedwitha**stressfulworkperiod**.\\n-Sleepwasthefirstcasualty\u2014youlostroughly**2+hourspernight**vs.yournorm.\\n-ByMay17,thesleepdebtlikelycaughtup,draggingstepsdownto**3,955**\u2014yourloweststepcountinthe90-daywindow.\\n-Thegoodnews:youbouncedback.Yourrecentsleepissolidlyinthe400\u2013475minrange,andstepsareconsistentlyinthe10\u201312kzone.\\n\\nThiskindoftoughweekhappens.Thekeytakeaway:whenvolumeandlifestressspikesimultaneously,**protectingsleepbecomesthe#1priority**\u2014it'sthefoundationthatkeepseverythingelsefromcrumbling.Yourdatasincethenshowsyou'veclearlyrecoveredandarebackontrack.\ud83d\udcaa",
+          "thinkingLength": 1669,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"SLEEP\", \"days\": 90}"
+            },
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"STEPS\", \"days\": 90}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            },
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 32.9
+        }
+      ]
+    },
+    {
+      "id": "query_compare_recent",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Compare my recent sleep and workout trend.",
+          "answer": "##Sleepvs.Workout\u201430-DayComparison\\n\\nHere'showyourtwokeyrecoveryandtrainingmetricsstackup:\\n\\n###\ud83d\udccaSide-by-SideSummary\\n\\n|Metric|SLEEP|WORKOUT|\\n|---|---|---|\\n|**Entries**|29|23|\\n|**30-DayAvg**|439min(7h19min)|64min|\\n|**Range**|384\u2013516min|30\u201391min|\\n|**Trend**|\u2192**Stable**|\u2191**Rising**|\\n|**StdDev**|\u00b135min|\u00b117min|\\n|**Anomaly**|516min(Jun10)|30min(today,Jul8)|\\n\\n###\ud83d\udcc8TrendComparison\\n\\n|WeekEnding|AvgSleep(min)|AvgWorkout(min)|\\n|---|---|---|\\n|**Jun15\u201321**|~419|~57(deloadweek)|\\n|**Jun22\u201328**|~442|~68|\\n|**Jun29\u2013Jul5**|~442|~73|\\n|**Jul6\u20138(partial)**|~426|~59(skewedbytoday's30min)|\\n\\n###\ud83d\udd0dWhatStandsOut\\n\\n1.**Workoutsareclimbing,sleepisflat.**Yourworkouttrendisrising(\u2191),especiallyafterthemid-Junedeload,withsessionsnowroutinelyhitting69\u201391minutes.Butsleephasstayedlockedaround7h19minwithaflattrend(\u2192).Astrainingloadincreases,sleepdemandtypicallyrisestoo\u2014thisgapisworthwatching.\\n\\n2.**Recentweeksleepisdippingslightly.**Yourlast7nights(Jul1\u20137)averaged**~426min(7h6min)**\u2014about13minutesbelowyour30-dayaverage.Notdrastic,butthedownwardnudgecoincideswithsomeofyourhardestsessions(91minenduranceride,79minbench/pull,77minsquatPReffort).\\n\\n3.**Today's30-minworkout**isflaggedasalowanomaly.Ifit'sanintentionallightdayoractiverecovery,that'sperfectlyfine\u2014especiallyafterthat91-minrideonthe4th.\\n\\n###\ud83d\udca1PracticalSuggestions\\n\\n-**Aimfor7h30min+onhardtrainingdays.**Yourhighest-qualityworkouts(77\u201391min)lineupwiththesleepdayswhereyougot440\u2013475min.That466minnightonJul2precededthestrong77minsquatsession\u2014notacoincidence.\\n-**Watchthetrend,notsinglenights.**One405minnightwon'thurtyou,butastringofsub-420minnightswhileworkoutsstayat70+mincouldleadtoaccumulatedfatigue.\\n-**Consideranextra15\u201330minofsleep**onthetwonightsfollowingyourlongestsessions(enduranceridesandPR-effortdays).Yourbodyrebuildsmostduringdeepsleep,andyourHIGHactivitylevelat76kgmeansrecoverydemandisreal.\\n\\nYou'retraininghardandconsistently\u2014makingsuresleepriseswiththatworkloadisthesmartnextstep.Wantmetodigintoanyspecificweekorlookathowothermetrics(likeweightorsteps)interactwiththispattern?",
+          "thinkingLength": 1475,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"SLEEP\", \"days\": 30}"
+            },
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"WORKOUT\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            },
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 31.4
+        }
+      ]
+    },
+    {
+      "id": "query_ids_before_delete",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Show my recent weight entries with IDs before I decide whether to edit anything.",
+          "answer": "Hereareyourrecentweightentriesfromthelast30days:\\n\\n|EntryID|Date|Weight(kg)|Notes|\\n|----------|------|-------------|-------|\\n|#2662|2026-07-07|76.10|Morningweigh-in|\\n|#2646|2026-07-05|76.00|Morningweigh-in|\\n|#2622|2026-07-02|75.40|Morningweigh-in|\\n|#2597|2026-06-29|75.90|Morningweigh-in|\\n|#2573|2026-06-26|75.40|Morningweigh-in|\\n|#2549|2026-06-23|75.20|Morningweigh-in|\\n|#2525|2026-06-20|74.60|Morningweigh-in|\\n|#2501|2026-06-17|74.50|Morningweigh-in|\\n|#2480|2026-06-14|74.40|Morningweigh-in|\\n|#2459|2026-06-11|74.00|Morningweigh-in|\\n\\n**Summary:**10entriesover30days.Avg**75.15kg**,rangingfrom74.00\u219276.10kg.Thetrendis**flat(\u2192)**,butyou'vebeenhoveringaround75\u201376kgthelasttwoweeks,upfromthelow74sinmid-June.Yourlatestrecordedweightis**76.10kg**,whichisjustaboveyourtargetof**75.00kg**.\\n\\nIfyou'dliketoeditordeleteanyentry,justtellmethe**entryID**andthechangeyouwant\u2014forexample,\"change#2662to76.5kg\"or\"delete#2646.\"",
+          "thinkingLength": 315,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"WEIGHT\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 14.8
+        }
+      ]
+    },
+    {
+      "id": "update_height_profile",
+      "group": "profile",
+      "description": "Update profile height instead of refusing",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Update my height to 188.",
+          "answer": "Yourheighthasbeenupdatedfrom**185cm\u2192188cm**.Yourprofilenowreflects:\\n\\n|Field|Value|\\n|---|---|\\n|Height|188cm|\\n|CurrentWeight|76.10kg|\\n|TargetWeight|75.00kg|\\n|ActivityLevel|High|\\n\\nIsthereanythingelseyou'dliketoadjust?",
+          "thinkingLength": 228,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"height_cm\": 188}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 7.5
+        }
+      ]
+    },
+    {
+      "id": "query_height_after_external_change",
+      "group": "profile",
+      "description": "Read latest profile height instead of stale chat history",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Update my height to 188.",
+          "answer": "Yourheighthasbeenupdatedto**188cm**.",
+          "thinkingLength": 195,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"height_cm\": 188}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 9.7
+        },
+        {
+          "prompt": "what's my height",
+          "answer": "Yourcurrentheightonfileis**183.5cm**.\\n\\nThisdiffersfromthe188cmyourequestedearlier\u2014itmayhavebeenchangedbackoutsidethischat.Wouldyoulikemetoupdateitto188cmagain?",
+          "thinkingLength": 676,
+          "toolCalls": [
+            {
+              "name": "query_profile",
+              "args": "{}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 6.5
+        }
+      ]
+    },
+    {
+      "id": "update_current_weight_syncs_tracker",
+      "group": "profile",
+      "description": "Updating current weight should affect Health profile weight card",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "update my weight to 69.3kg",
+          "answer": "Yourweighthasbeenupdatedto**69.3kg**\u2014loggedasWEIGHTentry#2719.\\n\\nHere'saquickprofilesnapshot:\\n\\n|Field|Value|\\n|---|---|\\n|Height|183.5cm|\\n|Currentweight|69.3kg|\\n|Startingweight|69.3kg|\\n|Targetweight|75.0kg|\\n|Activitylevel|High|\\n\\nYou'renowatyourstartingweightbaseline,withatargetof75.0kgahead.Letmeknowifyou'dliketoadjustyourgoalorloganythingelse!",
+          "thinkingLength": 402,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"current_weight_kg\": 69.3}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 14.3
+        }
+      ]
+    }
+  ]
+}

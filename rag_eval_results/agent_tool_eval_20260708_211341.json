@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-07-08T21:13:41.625745",
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "id": "create_weight_normal",
+      "group": "create",
+      "description": "Create a normal weight entry",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Log my weight as 76.2 kg today. Put this exact note: AGENT_EVAL_DO_NOT_KEEP create_weight_normal",
+          "answer": "Done!Yourweighthasbeenloggedas**76.2kg**today(entry#2669).Thatputsyouat1.8kgawayfromyourtargetof78.0kg\u2014solidprogress.",
+          "thinkingLength": 179,
+          "toolCalls": [
+            {
+              "name": "create_tracker_entry",
+              "args": "{\"tracker_type\": \"WEIGHT\", \"amount\": 76.2, \"notes\": \"AGENT_EVAL_DO_NOT_KEEP create_weight_normal\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "create_tracker_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 19.5
+        }
+      ]
+    },
+    {
+      "id": "create_sleep_decimal_hours",
+      "group": "create",
+      "description": "Create sleep with decimal hours converted to minutes",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Log that I slept 7.5 hours last night. Put this exact note: AGENT_EVAL_DO_NOT_KEEP create_sleep_decimal_hours",
+          "answer": "Done!Logged**7.5hours(450minutes)**ofsleepforlastnightwithyourrequestednote.That'sentry**#2670**.Thisisslightlyaboveyour30-dayaverageof~439minutes(7.3hours),soasolidnight.",
+          "thinkingLength": 326,
+          "toolCalls": [
+            {
+              "name": "create_tracker_entry",
+              "args": "{\"tracker_type\": \"SLEEP\", \"amount\": 450, \"notes\": \"AGENT_EVAL_DO_NOT_KEEP create_sleep_decimal_hours\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "create_tracker_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 22.8
+        }
+      ]
+    }
+  ]
+}

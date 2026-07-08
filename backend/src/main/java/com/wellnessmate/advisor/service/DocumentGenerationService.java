@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wellnessmate.advisor.domain.RagDocument;
 import com.wellnessmate.advisor.repository.RagDocumentRepository;
-import com.wellnessmate.common.api.ApiException;
 import com.wellnessmate.food.domain.FoodEntry;
 import com.wellnessmate.food.domain.FoodEntryItem;
 import com.wellnessmate.food.repository.FoodEntryItemRepository;
@@ -26,6 +25,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,9 @@ import org.springframework.stereotype.Service;
 public class DocumentGenerationService {
 
   private static final Logger log = LoggerFactory.getLogger(DocumentGenerationService.class);
+  private static final String WEEKLY_REPORT = "WEEKLY_REPORT";
+  private static final String MONTHLY_REPORT = "MONTHLY_REPORT";
+  private static final String CONVERSATION_SUMMARY = "CONVERSATION_SUMMARY";
 
   private final TrackerEntryRepository trackerEntries;
   private final FoodEntryRepository foodEntries;
@@ -48,6 +52,7 @@ public class DocumentGenerationService {
   private final AiAdvisorClient llmClient;
   private final EmbeddingClient embeddingClient;
   private final ObjectMapper mapper;
+  private final ConcurrentMap<Long, Object> generationLocks = new ConcurrentHashMap<>();
 
   public DocumentGenerationService(TrackerEntryRepository trackerEntries,
                                    FoodEntryRepository foodEntries,
@@ -70,15 +75,20 @@ public class DocumentGenerationService {
    * Backfills missing reports for all past periods that have tracker data.
    */
   public void ensureUpToDate(Long userId) {
-    try {
-      backfillWeeklyReports(userId);
-    } catch (Exception e) {
-      log.warn("Failed to generate weekly report for user {}: {}", userId, e.getMessage());
-    }
-    try {
-      backfillMonthlyReports(userId);
-    } catch (Exception e) {
-      log.warn("Failed to generate monthly report for user {}: {}", userId, e.getMessage());
+    Object lock = generationLocks.computeIfAbsent(userId, ignored -> new Object());
+    synchronized (lock) {
+      try {
+        backfillWeeklyReports(userId);
+      } catch (Exception e) {
+        log.warn("Failed to generate weekly report for user {}: {}", userId, e.getMessage());
+      }
+      try {
+        backfillMonthlyReports(userId);
+      } catch (Exception e) {
+        log.warn("Failed to generate monthly report for user {}: {}", userId, e.getMessage());
+      } finally {
+        generationLocks.remove(userId, lock);
+      }
     }
   }
 
@@ -90,7 +100,7 @@ public class DocumentGenerationService {
 
     // Collect already-covered weeks from existing reports
     List<RagDocument> existing = ragDocuments
-        .findByUserIdAndDocTypeOrderByCreatedAtDesc(userId, "WEEKLY_REPORT");
+        .findByUserIdAndDocTypeOrderByCreatedAtDesc(userId, WEEKLY_REPORT);
     java.util.Set<String> covered = new java.util.HashSet<>();
     for (RagDocument doc : existing) {
       String ws = fieldFromMetadata(doc.getMetadata(), "weekStart");
@@ -113,6 +123,11 @@ public class DocumentGenerationService {
 
   private void generateWeeklyReport(Long userId, Instant from, Instant to,
                                     LocalDate weekStart, LocalDate weekEnd) {
+    String sourceKey = "week:" + weekStart;
+    if (hasReport(userId, WEEKLY_REPORT, sourceKey, "weekStart", weekStart.toString())) {
+      return;
+    }
+
     String data = aggregateTrackerData(userId, from, to, weekStart, weekEnd, true);
     String summary = llmClient.reply(weeklyPrompt(data));
     float[] embedding = embeddingClient.embed(summary);
@@ -123,10 +138,16 @@ public class DocumentGenerationService {
     meta.put("periodType", "week");
     meta.put("weekStart", weekStart.toString());
     meta.put("weekEnd", weekEnd.toString());
+    meta.put("sourceScope", "tracker_and_food_period_snapshot");
+    meta.put("summarySchemaVersion", 1);
+    meta.put("structuredStats", structuredStats(userId, from, to));
 
     String title = "Week of " + weekStart;
     try {
-      ragDocuments.save(new RagDocument(userId, null, "WEEKLY_REPORT", title, summary,
+      if (hasReport(userId, WEEKLY_REPORT, sourceKey, "weekStart", weekStart.toString())) {
+        return;
+      }
+      ragDocuments.save(new RagDocument(userId, null, WEEKLY_REPORT, sourceKey, title, summary,
           mapper.writeValueAsString(embeddingToList(embedding)),
           mapper.writeValueAsString(meta)));
       log.info("Generated WEEKLY_REPORT for user {}: {}", userId, title);
@@ -142,7 +163,7 @@ public class DocumentGenerationService {
 
     // Collect already-covered months from existing reports
     List<RagDocument> existing = ragDocuments
-        .findByUserIdAndDocTypeOrderByCreatedAtDesc(userId, "MONTHLY_REPORT");
+        .findByUserIdAndDocTypeOrderByCreatedAtDesc(userId, MONTHLY_REPORT);
     java.util.Set<String> covered = new java.util.HashSet<>();
     for (RagDocument doc : existing) {
       String y = fieldFromMetadata(doc.getMetadata(), "year");
@@ -167,6 +188,13 @@ public class DocumentGenerationService {
 
   private void generateMonthlyReport(Long userId, Instant from, Instant to,
                                      LocalDate monthStart, LocalDate monthEnd) {
+    String year = String.valueOf(monthStart.getYear());
+    String month = monthStart.getMonth().toString();
+    String sourceKey = "month:" + year + "-" + month;
+    if (hasMonthlyReport(userId, sourceKey, year, month)) {
+      return;
+    }
+
     String data = aggregateTrackerData(userId, from, to, monthStart, monthEnd, false);
     String summary = llmClient.reply(monthlyPrompt(data));
     float[] embedding = embeddingClient.embed(summary);
@@ -175,12 +203,18 @@ public class DocumentGenerationService {
     meta.put("coveredFrom", from.toString());
     meta.put("coveredTo", to.toString());
     meta.put("periodType", "month");
-    meta.put("month", monthStart.getMonth().toString());
+    meta.put("month", month);
     meta.put("year", monthStart.getYear());
+    meta.put("sourceScope", "tracker_and_food_period_snapshot");
+    meta.put("summarySchemaVersion", 1);
+    meta.put("structuredStats", structuredStats(userId, from, to));
 
     String title = monthStart.getMonth() + " " + monthStart.getYear();
     try {
-      ragDocuments.save(new RagDocument(userId, null, "MONTHLY_REPORT", title, summary,
+      if (hasMonthlyReport(userId, sourceKey, year, month)) {
+        return;
+      }
+      ragDocuments.save(new RagDocument(userId, null, MONTHLY_REPORT, sourceKey, title, summary,
           mapper.writeValueAsString(embeddingToList(embedding)),
           mapper.writeValueAsString(meta)));
       log.info("Generated MONTHLY_REPORT for user {}: {}", userId, title);
@@ -200,11 +234,90 @@ public class DocumentGenerationService {
     }
   }
 
+  private boolean hasMonthlyReport(Long userId, String sourceKey, String year, String month) {
+    return ragDocuments.findByUserIdAndDocTypeOrderByCreatedAtDesc(userId, MONTHLY_REPORT)
+        .stream()
+        .anyMatch(doc -> sourceKey.equals(doc.getSourceKey())
+            || (year.equals(fieldFromMetadata(doc.getMetadata(), "year"))
+            && month.equals(fieldFromMetadata(doc.getMetadata(), "month"))));
+  }
+
+  private boolean hasReport(Long userId, String docType, String sourceKey, String field, String value) {
+    return ragDocuments.findByUserIdAndDocTypeOrderByCreatedAtDesc(userId, docType)
+        .stream()
+        .anyMatch(doc -> sourceKey.equals(doc.getSourceKey())
+            || value.equals(fieldFromMetadata(doc.getMetadata(), field)));
+  }
+
   // ── Data helpers ──
 
   private boolean hasTrackerData(Long userId, Instant from, Instant to) {
     var page = trackerEntries.findOwned(userId, null, from, to, PageRequest.of(0, 1));
     return page.getTotalElements() > 0;
+  }
+
+  private Map<String, Object> structuredStats(Long userId, Instant from, Instant to) {
+    Map<String, Object> result = new LinkedHashMap<>();
+
+    var page = trackerEntries.findOwned(userId, null, from, to,
+        PageRequest.of(0, 500, org.springframework.data.domain.Sort.by("recordedAt")));
+    List<TrackerEntry> entries = page.getContent();
+    Map<TrackerType, List<TrackerEntry>> grouped = entries.stream()
+        .collect(Collectors.groupingBy(TrackerEntry::getTrackerType));
+
+    Map<String, Object> trackerStats = new LinkedHashMap<>();
+    for (var typeGroup : grouped.entrySet()) {
+      TrackerType type = typeGroup.getKey();
+      List<BigDecimal> values = typeGroup.getValue().stream().map(TrackerEntry::getAmount).toList();
+      if (values.isEmpty()) continue;
+
+      Map<String, Object> stats = new LinkedHashMap<>();
+      stats.put("count", values.size());
+      stats.put("unit", type.unit());
+      stats.put("avg", average(values));
+      stats.put("min", values.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO));
+      stats.put("max", values.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO));
+      trackerStats.put(type.name(), stats);
+    }
+    result.put("trackers", trackerStats);
+
+    List<FoodEntry> foods = foodEntries
+        .findByUserIdAndRecordedAtGreaterThanEqualAndRecordedAtLessThanOrderByRecordedAtDesc(
+            userId, from, to);
+    if (!foods.isEmpty()) {
+      List<Long> entryIds = foods.stream().map(FoodEntry::getId).toList();
+      List<FoodEntryItem> items = foodItems.findByFoodEntryIdInOrderById(entryIds);
+      long trackedDays = foods.stream()
+          .map(e -> e.getRecordedAt().atZone(ZoneOffset.UTC).toLocalDate())
+          .distinct()
+          .count();
+      trackedDays = Math.max(1, trackedDays);
+
+      BigDecimal totalCal = BigDecimal.ZERO;
+      BigDecimal totalPro = BigDecimal.ZERO;
+      BigDecimal totalCarb = BigDecimal.ZERO;
+      BigDecimal totalFat = BigDecimal.ZERO;
+      BigDecimal totalFiber = BigDecimal.ZERO;
+      for (FoodEntryItem item : items) {
+        totalCal = totalCal.add(item.getCalories());
+        totalPro = totalPro.add(item.getProteinGrams());
+        totalCarb = totalCarb.add(item.getCarbohydrateGrams());
+        totalFat = totalFat.add(item.getFatGrams());
+        totalFiber = totalFiber.add(item.getFiberGrams());
+      }
+
+      Map<String, Object> foodStats = new LinkedHashMap<>();
+      foodStats.put("mealCount", foods.size());
+      foodStats.put("trackedDays", trackedDays);
+      foodStats.put("dailyAvgCalories", totalCal.divide(BigDecimal.valueOf(trackedDays), 0, RoundingMode.HALF_UP));
+      foodStats.put("dailyAvgProteinGrams", totalPro.divide(BigDecimal.valueOf(trackedDays), 1, RoundingMode.HALF_UP));
+      foodStats.put("dailyAvgCarbsGrams", totalCarb.divide(BigDecimal.valueOf(trackedDays), 1, RoundingMode.HALF_UP));
+      foodStats.put("dailyAvgFatGrams", totalFat.divide(BigDecimal.valueOf(trackedDays), 1, RoundingMode.HALF_UP));
+      foodStats.put("dailyAvgFiberGrams", totalFiber.divide(BigDecimal.valueOf(trackedDays), 1, RoundingMode.HALF_UP));
+      result.put("food", foodStats);
+    }
+
+    return result;
   }
 
   /**
@@ -343,7 +456,7 @@ public class DocumentGenerationService {
     // 10-minute debounce
     Optional<RagDocument> recent = ragDocuments
         .findTopByUserIdAndDocTypeAndSessionIdOrderByCreatedAtDesc(
-            userId, "CONVERSATION_SUMMARY", sessionId);
+            userId, CONVERSATION_SUMMARY, sessionId);
     if (recent.isPresent() && recent.get().getCreatedAt()
         .isAfter(Instant.now().minus(10, ChronoUnit.MINUTES))) {
       return;
@@ -354,10 +467,12 @@ public class DocumentGenerationService {
 
     Map<String, Object> meta = new LinkedHashMap<>();
     meta.put("sessionId", sessionId);
+    meta.put("sourceScope", "advisor_conversation_summary");
+    meta.put("summarySchemaVersion", 2);
 
     String title = truncate(question, 80);
     try {
-      ragDocuments.save(new RagDocument(userId, sessionId, "CONVERSATION_SUMMARY",
+      ragDocuments.save(new RagDocument(userId, sessionId, CONVERSATION_SUMMARY,
           title, summary,
           mapper.writeValueAsString(embeddingToList(embedding)),
           mapper.writeValueAsString(meta)));
@@ -373,8 +488,15 @@ public class DocumentGenerationService {
 
   private String conversationSummaryPrompt(String question, String answer) {
     return """
-        Summarize the following wellness advisor conversation in 1-2 sentences.
-        Focus on the key health topics discussed and any actionable advice given.
+        Summarize the following wellness advisor conversation for future retrieval.
+        Separate durable user-provided facts from advisor suggestions. Do not convert
+        guesses, estimates, or advice into facts about the user.
+
+        Use this exact compact format:
+        USER_FACTS: facts the user explicitly stated, or "none"
+        USER_PREFERENCES: preferences, constraints, goals, or dislikes explicitly stated, or "none"
+        ADVICE_GIVEN: brief summary of advisor suggestions, or "none"
+        OPEN_LOOPS: follow-up items worth remembering, or "none"
 
         User: %s
         Advisor: %s

@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-07-08T21:23:16.791477",
+  "passed": 0,
+  "total": 1,
+  "results": [
+    {
+      "id": "update_weight_confirm",
+      "group": "update",
+      "description": "Update requires confirmation and then changes value",
+      "passed": false,
+      "problems": [
+        "entry disappeared: HTTP 404 {'timestamp': '2026-07-08T13:23:16.661434620Z', 'status': 404, 'code': 'TRACKER_ENTRY_NOT_FOUND', 'message': 'Tracker entry not found', 'path': '/api/tracker-entries/2676', 'fieldErrors': {}}"
+      ],
+      "turns": [
+        {
+          "prompt": "Change tracker entry #2676 to 77.7 kg.",
+          "answer": "No data has changed yet. To confirm updating tracker entry #2676, reply exactly: confirm 5A71CD5B. Requested new amount: 77.7.",
+          "thinkingLength": 271,
+          "toolCalls": [
+            {
+              "name": "update_tracker_entry",
+              "args": "{\"entry_id\": 2676, \"amount\": 77.7}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_tracker_entry",
+              "success": false
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 12.4
+        },
+        {
+          "prompt": "confirm UPDATING",
+          "answer": "Thatdoesn'tmatchtherequiredconfirmationtoken.Toupdateentry**#2676**to77.7kg,Ineedyoutoreplywiththeexacttoken:**confirm5A71CD5B**Pleasetryagain\u2014nochangeshavebeenmadeyet.",
+          "thinkingLength": 131,
+          "toolCalls": [],
+          "toolResults": [],
+          "errors": [],
+          "elapsedSeconds": 3.4
+        }
+      ]
+    }
+  ]
+}

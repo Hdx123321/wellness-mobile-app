@@ -9,6 +9,8 @@ public interface RagDocumentRepository extends JpaRepository<RagDocument, Long> 
 
   List<RagDocument> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+  List<RagDocument> findTop80ByUserIdOrderByCreatedAtDesc(Long userId);
+
   List<RagDocument> findByUserIdAndDocTypeOrderByCreatedAtDesc(Long userId, String docType);
 
   Optional<RagDocument> findTopByUserIdAndDocTypeOrderByCreatedAtDesc(Long userId, String docType);

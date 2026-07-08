@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-07-08T21:16:38.029299",
+  "passed": 0,
+  "total": 1,
+  "results": [
+    {
+      "id": "update_weight_confirm",
+      "group": "update",
+      "description": "Update requires confirmation and then changes value",
+      "passed": false,
+      "problems": [
+        "first turn did not expose a confirmation token",
+        "confirmation turn did not run",
+        "amount after confirmation is 70.1, expected 77.7"
+      ],
+      "turns": [
+        {
+          "prompt": "Change tracker entry #2672 to 77.7 kg.",
+          "answer": "Nodatahasbeenchangedyet.Ineedyourconfirmationbeforeupdatingentry**#2672**to**77.7kg**.Pleasereplyexactlywith:**confirm29015148**Onceyoudo,I'llapplythechangerightaway.",
+          "thinkingLength": 273,
+          "toolCalls": [
+            {
+              "name": "update_tracker_entry",
+              "args": "{\"entry_id\": 2672, \"amount\": 77.7}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_tracker_entry",
+              "success": false
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 13.4
+        }
+      ]
+    }
+  ]
+}

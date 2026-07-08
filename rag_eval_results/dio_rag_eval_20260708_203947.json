@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-07-08T20:39:47.284712",
+  "passed": 1,
+  "total": 1,
+  "averageScore": 0.75,
+  "results": [
+    {
+      "id": "steps_specific",
+      "question": "Were my steps lower during the stressful week?",
+      "answer": "Letmepullupyourstepdatatocomparethestressfulweekagainstyourotherweeks.**Yes,yourstepsdroppedsignificantlyduringthatstressfulweek(May11\u201317).**Here'showitcompares:|Period|AvgDailySteps||---|---||Weekbefore(May4\u201310)|**8,426**||**Stressfulweek(May11\u201317)**|**6,215**\ud83d\udcc9||Weekafter(May18\u201324)|**8,771**||Your90-dayaverage|**8,814**|That'sroughlya**26\u201330%drop**comparedtoyoursurroundingweeks\u2014andevenhitalowofjust**3,955steps**onMay17(flaggedasananomalyinyourdata,withthenote:*\"volumeincrease;stressfulworkweek,poorsleep\"*).Soyes,thestressclearlyimpactedyouractivity.Thegoodnewsisyoubouncedrightbackthefollowingweekto8,771steps,whichshowsstrongresilience.Forcomparison,yourrecentnumbersareevenhigher\u2014you'vebeenconsistentlyhitting10,000\u201312,000+stepslatelyduringyourstrengthpeak,soyou'reinamuchbetterplacenow.Isthereanythingelseyou'dliketoexplorefromthatperiod?",
+      "thinkingLength": 1726,
+      "toolCalls": [
+        {
+          "name": "query_tracker_data",
+          "args": "{\"tracker_type\": \"STEPS\", \"days\": 90}"
+        }
+      ],
+      "toolResults": [
+        {
+          "name": "query_tracker_data",
+          "success": true
+        }
+      ],
+      "evaluation": {
+        "score": 0.75,
+        "passed": true,
+        "hits": [
+          "steps",
+          "stress"
+        ],
+        "misses": [
+          "lower"
+        ],
+        "forbiddenHits": [],
+        "requiredTool": "query_tracker_data",
+        "toolNames": [
+          "query_tracker_data"
+        ],
+        "toolOk": true,
+        "errors": []
+      }
+    }
+  ]
+}

@@ -52,8 +52,13 @@ class DeleteTrackerEntryTool implements Tool {
     entryId.put("type", "integer");
     entryId.put("description", "The entry ID to delete (e.g., #42 from query results)");
 
+    Map<String, Object> confirmationToken = new LinkedHashMap<>();
+    confirmationToken.put("type", "string");
+    confirmationToken.put("description", "Required only after the backend asks for confirmation. Use the exact token the user confirmed.");
+
     Map<String, Object> props = new LinkedHashMap<>();
     props.put("entry_id", entryId);
+    props.put("confirmation_token", confirmationToken);
 
     schema.put("properties", props);
     schema.put("required", List.of("entry_id"));

@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-07-08T23:02:52.724583",
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "id": "create_food_breakfast",
+      "group": "create",
+      "description": "Create a breakfast food entry",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Log breakfast today: oatmeal with whey, banana, and peanut butter, about 650 kcal. Put this exact note: AGENT_EVAL_DO_NOT_KEEP create_food_breakfast",
+          "answer": "Logged your breakfast.\\n\\n| Food | Meal | Calories |\\n|---|---|---|\\n| Oatmeal | Breakfast | 200 kcal |\\n| Whey Protein | Breakfast | 130 kcal |\\n| Banana | Breakfast | 105 kcal |\\n| Peanut Butter | Breakfast | 215 kcal |\\n\\n**Total:** 650 kcal.",
+          "thinkingLength": 894,
+          "toolCalls": [
+            {
+              "name": "create_food_entry",
+              "args": "{\"meal_type\": \"BREAKFAST\", \"items\": [{\"food_name\": \"Oatmeal\", \"calories\": 200}, {\"food_name\": \"Whey Protein\", \"calories\": 130}, {\"food_name\": \"Banana\", \"calories\": 105}, {\"food_name\": \"Peanut Butter\", \"calories\": 215}], \"notes\": \"AGENT_EVAL_DO_NOT_KEEP create_food_breakfast\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "create_food_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 14.8
+        }
+      ]
+    },
+    {
+      "id": "create_food_multi_item",
+      "group": "create",
+      "description": "Create multi-item dinner as food entries",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Log dinner today: rice, chicken breast, broccoli, olive oil, about 850 kcal total. Put this exact note: AGENT_EVAL_DO_NOT_KEEP create_food_multi_item",
+          "answer": "Logged your dinner.\\n\\n| Food | Meal | Calories |\\n|---|---|---|\\n| White Rice | Dinner | 325 kcal |\\n| Grilled Chicken Breast | Dinner | 330 kcal |\\n| Steamed Broccoli | Dinner | 50 kcal |\\n| Olive Oil | Dinner | 120 kcal |\\n\\n**Total:** 825 kcal.",
+          "thinkingLength": 1109,
+          "toolCalls": [
+            {
+              "name": "create_food_entry",
+              "args": "{\"meal_type\": \"DINNER\", \"items\": [{\"food_name\": \"White Rice\", \"grams\": 250, \"calories\": 325, \"carbs_grams\": 70, \"protein_grams\": 6, \"fat_grams\": 1}, {\"food_name\": \"Grilled Chicken Breast\", \"grams\": 200, \"calories\": 330, \"carbs_grams\": 0, \"protein_grams\": 62, \"fat_grams\": 7}, {\"food_name\": \"Steamed Broccoli\", \"grams\": 150, \"calories\": 50, \"carbs_grams\": 10, \"protein_grams\": 4, \"fat_grams\": 0}, {\"food_name\": \"Olive Oil\", \"grams\": 15, \"calories\": 120, \"carbs_grams\": 0, \"protein_grams\": 0, \"fat_grams\": 14}], \"recorded_date\": \"2026-07-08\", \"notes\": \"AGENT_EVAL_DO_NOT_KEEP create_food_multi_item\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "create_food_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 19.8
+        }
+      ]
+    }
+  ]
+}

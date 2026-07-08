@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-07-08T21:23:14.148683",
+  "passed": 0,
+  "total": 1,
+  "results": [
+    {
+      "id": "delete_steps_confirm",
+      "group": "delete",
+      "description": "Delete requires confirmation and then removes entry",
+      "passed": false,
+      "problems": [
+        "entry still accessible or unexpected status: HTTP 200 {'id': 2675, 'type': 'STEPS', 'recordedAt': '2026-07-08T11:22:59Z', 'amount': 4321.0, 'unit': 'steps', 'detail': None, 'notes': 'AGENT_EVAL_DO_NOT_KEEP delete_steps', 'source': 'MANUAL', 'version': 0}"
+      ],
+      "turns": [
+        {
+          "prompt": "Delete tracker entry #2675.",
+          "answer": "No data has changed yet. To confirm deleting tracker entry #2675, reply exactly: confirm 67486BE5.",
+          "thinkingLength": 154,
+          "toolCalls": [
+            {
+              "name": "delete_tracker_entry",
+              "args": "{\"entry_id\": 2675}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "delete_tracker_entry",
+              "success": false
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 8.0
+        },
+        {
+          "prompt": "confirm DELETING",
+          "answer": "Ineedyoutoreplywiththeexactconfirmationtoken.Pleasesendthis:**67486BE5**That'sthetokenrequiredtodeleteentry#2675.Ican'tuse\"DELETING\"\u2014ithastobethetokenasshownabove.",
+          "thinkingLength": 783,
+          "toolCalls": [],
+          "toolResults": [],
+          "errors": [],
+          "elapsedSeconds": 5.1
+        }
+      ]
+    }
+  ]
+}

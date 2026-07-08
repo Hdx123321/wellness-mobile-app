@@ -1,0 +1,82 @@
+{
+  "generatedAt": "2026-07-08T21:50:15.210782",
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "id": "update_height_profile",
+      "group": "profile",
+      "description": "Update profile height instead of refusing",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Update my height to 188.",
+          "answer": "Done!Yourheighthasbeenupdatedfrom185cmto**188cm**.Here'saquicksnapshotofyourcurrentprofile:-**Height:**188cm\u2705*(justupdated)*-**CurrentWeight:**75.6kg-**TargetWeight:**78.0kg-**ActivityLevel:**HighIsthereanythingelseyou'dliketoadjust?",
+          "thinkingLength": 193,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"height_cm\": 188}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 22.3
+        }
+      ]
+    },
+    {
+      "id": "query_height_after_external_change",
+      "group": "profile",
+      "description": "Read latest profile height instead of stale chat history",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Update my height to 188.",
+          "answer": "Done!Yourheighthasbeenupdatedfrom185cmto**188cm**.Yourotherprofiledetailsremainthesame:-Currentweight:**75.6kg**-Targetweight:**78.0kg**-Activitylevel:**High**",
+          "thinkingLength": 218,
+          "toolCalls": [
+            {
+              "name": "update_profile",
+              "args": "{\"height_cm\": 188}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "update_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 12.8
+        },
+        {
+          "prompt": "what's my height",
+          "answer": "Yourcurrentheightonfileis**183.5cm**.",
+          "thinkingLength": 1308,
+          "toolCalls": [
+            {
+              "name": "query_profile",
+              "args": "{}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_profile",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 9.7
+        }
+      ]
+    }
+  ]
+}

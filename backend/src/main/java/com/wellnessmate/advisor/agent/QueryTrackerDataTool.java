@@ -40,8 +40,7 @@ class QueryTrackerDataTool implements Tool {
     trackerType.put("type", "string");
     trackerType.put("description", "The tracker type to query");
     trackerType.put("enum", List.of(
-        "WEIGHT", "SLEEP", "STEPS", "WORKOUT", "WATER",
-        "MEDICINE", "HEART_RATE", "BLOOD_GLUCOSE", "FOOD"));
+        "FOOD", "WEIGHT", "WORKOUT", "STEPS", "SLEEP", "WATER", "MEDICINE"));
 
     Map<String, Object> days = new LinkedHashMap<>();
     days.put("type", "integer");
@@ -66,7 +65,8 @@ class QueryTrackerDataTool implements Tool {
     try {
       type = TrackerType.valueOf(typeStr.toUpperCase());
     } catch (IllegalArgumentException e) {
-      return "Error: unknown tracker type '" + typeStr + "'. Valid types: WEIGHT, SLEEP, STEPS, WORKOUT, WATER, MEDICINE, HEART_RATE, BLOOD_GLUCOSE";
+      return "Error: unknown tracker type '" + typeStr
+          + "'. Valid types: FOOD, WEIGHT, WORKOUT, STEPS, SLEEP, WATER, MEDICINE";
     }
     int days = args.has("days") ? args.path("days").asInt(7) : 7;
     if (days < 1) days = 7;

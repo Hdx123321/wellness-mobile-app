@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-07-08T22:59:20.788038",
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "id": "create_food_breakfast",
+      "group": "create",
+      "description": "Create a breakfast food entry",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Log breakfast today: oatmeal with whey, banana, and peanut butter, about 650 kcal. Put this exact note: AGENT_EVAL_DO_NOT_KEEP create_food_breakfast",
+          "answer": "Logged your breakfast.| Food | Meal | Calories ||---|---|---|| Oatmeal | Breakfast | 300 kcal || Whey Protein | Breakfast | 120 kcal || Banana | Breakfast | 105 kcal || Peanut Butter | Breakfast | 125 kcal |**Total:** 650 kcal.",
+          "thinkingLength": 905,
+          "toolCalls": [
+            {
+              "name": "create_food_entry",
+              "args": "{\"meal_type\": \"BREAKFAST\", \"items\": [{\"food_name\": \"Oatmeal\", \"calories\": 300, \"grams\": 80, \"protein_grams\": 10, \"carbs_grams\": 54, \"fat_grams\": 5}, {\"food_name\": \"Whey Protein\", \"calories\": 120, \"grams\": 30, \"protein_grams\": 25, \"carbs_grams\": 3, \"fat_grams\": 1.5}, {\"food_name\": \"Banana\", \"calories\": 105, \"grams\": 118, \"protein_grams\": 1.3, \"carbs_grams\": 27, \"fat_grams\": 0.4}, {\"food_name\": \"Peanut Butter\", \"calories\": 125, \"grams\": 20, \"protein_grams\": 5, \"carbs_grams\": 4, \"fat_grams\": 10}], \"notes\": \"AGENT_EVAL_DO_NOT_KEEP create_food_breakfast\"}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "create_food_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 16.1
+        }
+      ]
+    },
+    {
+      "id": "create_food_multi_item",
+      "group": "create",
+      "description": "Create multi-item dinner as food entries",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "Log dinner today: rice, chicken breast, broccoli, olive oil, about 850 kcal total. Put this exact note: AGENT_EVAL_DO_NOT_KEEP create_food_multi_item",
+          "answer": "Logged your dinner.| Food | Meal | Calories ||---|---|---|| White Rice | Dinner | 325 kcal || Grilled Chicken Breast | Dinner | 330 kcal || Steamed Broccoli | Dinner | 35 kcal || Olive Oil | Dinner | 160 kcal |**Total:** 850 kcal.",
+          "thinkingLength": 1699,
+          "toolCalls": [
+            {
+              "name": "create_food_entry",
+              "args": "{\"meal_type\": \"DINNER\", \"recorded_date\": \"2026-07-08\", \"notes\": \"AGENT_EVAL_DO_NOT_KEEP create_food_multi_item\", \"items\": [{\"food_name\": \"White Rice\", \"grams\": 250, \"calories\": 325, \"carbs_grams\": 70, \"protein_grams\": 6, \"fat_grams\": 1}, {\"food_name\": \"Grilled Chicken Breast\", \"grams\": 200, \"calories\": 330, \"protein_grams\": 62, \"carbs_grams\": 0, \"fat_grams\": 7}, {\"food_name\": \"Steamed Broccoli\", \"grams\": 100, \"calories\": 35, \"carbs_grams\": 7, \"protein_grams\": 3, \"fat_grams\": 0}, {\"food_name\": \"Olive Oil\", \"grams\": 20, \"calories\": 160, \"fat_grams\": 18, \"carbs_grams\": 0, \"protein_grams\": 0}]}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "create_food_entry",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 17.1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-07-08T21:12:53.686285",
+  "passed": 3,
+  "total": 3,
+  "results": [
+    {
+      "id": "query_latest_weight",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "What is my latest recorded weight?",
+          "answer": "Your**latestrecordedweight**is**76.10kg**on**July7,2026**(entry#2662).Here'saquicklookatyourrecenttrend:|Date|Weight||------|--------||Jul7|76.10kg||Jul5|76.00kg||Jul2|75.40kg||Jun29|75.90kg||Jun26|75.40kg|You'vebeentrendingupwardfrom~74.00kginmid-Juneto76.10kgnow\u2014movingclosertoyourtargetof78.00kg.Thatsaid,yourprofilestillshows75.60kg,soitmaynothavesyncedwiththelatestentryyet.Ifyou'dliketoupdateyourprofileweighttomatch,justletmeknow!",
+          "thinkingLength": 419,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"WEIGHT\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 17.5
+        }
+      ]
+    },
+    {
+      "id": "query_average_sleep_30d",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "What is my average sleep over the last 30 days?",
+          "answer": "Letmepullupyourlatestsleepdatanow.Youraveragesleepoverthelast30daysis**7hours19minutes**(439minutes),basedon29trackednights.Here'sthefullpicture:|Metric|Value||---|---||**Average**|7h19m(439min)||**Minimum**|6h24m(384min)||**Maximum**|8h36m(516min)||**Trend**|\u2192Stable||**Entries**|29nights|**Whatstandsout:**-Yoursleephasbeenquiteconsistent,withastandarddeviationofonly35minutes\u2014that'sagoodsignforsleephygiene.-Thehighestnightwas**June10that8h36m**(#2449),whichfellduringyourplanneddeloadweek\u2014exactlywhenrecoveryismostimportant.-Recentnightsaretrendingslightlylower:yourlastfewentriesrangefrom**6h45mto7h10m**(405\u2013430min),whichisatouchbelowyour30-dayaverage.Givenyourhighactivitylevelandgoaltogainweight(currently75.6kg,targeting78kg),that7h19maverageissolid,butbumpingittoward**7h30m\u20138h**wouldbettersupportmusclerecoveryandgrowth.Evenadding15\u201320minutespernightcouldmakeameaningfuldifference.Wouldyoulikeanytipsonextendingyoursleep?",
+          "thinkingLength": 635,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"SLEEP\", \"days\": 30}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 25.6
+        }
+      ]
+    },
+    {
+      "id": "query_steps_last_week",
+      "group": "query",
+      "description": "Query tracker-backed data",
+      "passed": true,
+      "problems": [],
+      "turns": [
+        {
+          "prompt": "How many steps did I average in the last 7 days?",
+          "answer": "Overthelast7days,youaveraged**10,860stepsperday**.Here'sthedailybreakdown:|Day|Steps||---|---||Jul1|11,992||Jul2|10,957||Jul3|10,391||Jul4|9,923||Jul5|10,803||Jul6|9,995||Jul7|11,956|Yourrangewas9,923to11,992steps,andthetrendissteady.Youhadnodaysbelow9,900\u2014that'saveryconsistentweek,especiallywithyourlowestdaystillwellabovethehistoricalaveragesIcanseefromearliermonths(whereyouwereinthe7,300\u20138,800range).Niceworkkeepingthosestepnumbersup!",
+          "thinkingLength": 231,
+          "toolCalls": [
+            {
+              "name": "query_tracker_data",
+              "args": "{\"tracker_type\": \"STEPS\", \"days\": 7}"
+            }
+          ],
+          "toolResults": [
+            {
+              "name": "query_tracker_data",
+              "success": true
+            }
+          ],
+          "errors": [],
+          "elapsedSeconds": 11.9
+        }
+      ]
+    }
+  ]
+}
