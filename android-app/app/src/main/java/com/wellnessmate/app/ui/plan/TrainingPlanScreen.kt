@@ -142,9 +142,6 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel,
                             if (user.role == "CLIENT" && hasUnreadMessages) UnreadDot()
                         }
                         Text("${plan.difficulty} · ${plan.durationWeeks} weeks · Coach ${plan.coachName}")
-                        if (plan.videoUrl != null) Text("▶ Video included", color = MaterialTheme.colorScheme.primary)
-                        Text(plan.goal, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
-                        Text(plan.summary, maxLines = 2)
                     }
                 }
             }
@@ -406,7 +403,7 @@ private fun PlanEditor(viewModel: TrainingPlanViewModel, existing: TrainingPlanR
 
                     // Preview uploaded media
                     if (b.imageUrl.isNotBlank()) {
-                        val fullUrl = if (b.imageUrl.startsWith("/api")) "http://10.0.2.2:18080${b.imageUrl}" else b.imageUrl
+                        val fullUrl = if (b.imageUrl.startsWith("/api")) BuildConfig.API_BASE_URL.trimEnd('/') + b.imageUrl else b.imageUrl
                         AsyncImage(
                             model = ImageRequest.Builder(context).data(fullUrl).build(),
                             contentDescription = "Preview",

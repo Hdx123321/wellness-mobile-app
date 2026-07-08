@@ -1,6 +1,6 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
-import com.wellnessmate.app.data.ProfileResponse
+import com.alpinefitness.app.data.ProfileResponse
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test

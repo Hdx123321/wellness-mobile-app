@@ -174,15 +174,6 @@ fun WorkoutTrackerScreen(
     val weekTotalCalories = weekEntries.sumOf { estimateWorkoutCalories(weightKg, it.amount, it.detail) }
     val weekDailyAvgCal = weekTotalCalories / 7.0  // averaged over all 7 days
 
-    // ── 7‑day chart data ──
-    val chart = (6 downTo 0).map { offset ->
-        val date = selectedDate.minusDays(offset.toLong())
-        val dayEntries = entries.filter { entryDate(it) == date }
-        val duration = dayEntries.sumOf { it.amount }
-        val calories = dayEntries.sumOf { estimateWorkoutCalories(weightKg, it.amount, it.detail) }
-        Triple(date, duration, calories)
-    }
-
     // ── Workout type distribution for the current week ──
     val typeDistribution = weekEntries
         .groupBy { it.detail?.let { defForLabel(it).label } ?: "Other" }
@@ -195,6 +186,7 @@ fun WorkoutTrackerScreen(
             )
         }
         .sortedByDescending { it.totalMin }
+    val weeklyAdvice = workoutWeeklyAdvice(weekDays, weekTotalDuration, typeDistribution)
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         // Header
@@ -227,9 +219,9 @@ fun WorkoutTrackerScreen(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F8FF)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("AI Adviser · Weekly review", style = MaterialTheme.typography.titleMedium)
+                    Text("AI Advisor · Weekly review", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Personalized comments on your workout balance and progress will appear here.",
+                        weeklyAdvice,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -249,24 +241,6 @@ fun WorkoutTrackerScreen(
                     }
                 }
             }
-        }
-
-        // ── Calories 7‑day bar chart ──
-        item {
-            SevenDayBarChart(
-                values = chart.map { it.first to it.third },
-                unit = "kcal",
-                showMissingPlaceholders = true,
-            )
-        }
-
-        // ── Duration 7‑day bar chart ──
-        item {
-            SevenDayBarChart(
-                values = chart.map { it.first to it.second },
-                unit = "min",
-                showMissingPlaceholders = true,
-            )
         }
 
         item {
@@ -333,6 +307,19 @@ fun WorkoutTrackerScreen(
             dismissButton = { TextButton(onClick = { deleteId = null }) { Text("Cancel") } },
         )
     }
+}
+
+private fun workoutWeeklyAdvice(
+    workoutDays: Int,
+    totalMinutes: Double,
+    distribution: List<TypeSummary>,
+): String = when {
+    workoutDays == 0 -> "No workout is logged this week. Start with one manageable 20-30 minute session and build consistency from there."
+    workoutDays == 1 -> "You have started the week. Add one or two sessions on non-consecutive days, and include a short mobility or recovery block."
+    workoutDays >= 6 -> "Training volume is high across $workoutDays days. Protect at least one recovery day and keep the next session easy if fatigue is building."
+    totalMinutes >= 300 -> "You logged ${totalMinutes.roundToInt()} minutes across $workoutDays days. Volume is strong; prioritize sleep, hydration, and one lighter recovery session."
+    distribution.size == 1 -> "Consistency is developing across $workoutDays days. Balance ${distribution.first().type} with a different training style, such as strength, cardio, or mobility."
+    else -> "You trained on $workoutDays days for ${totalMinutes.roundToInt()} minutes with ${distribution.size} activity types. Keep the mix and schedule the next session after adequate recovery."
 }
 
 // ── Workout day row ───────────────────────────────────────────────────

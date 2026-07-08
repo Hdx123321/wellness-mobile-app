@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +51,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -141,7 +144,9 @@ fun FoodTrackerScreen(
                 }
             }
             Text(selectedDate.toString(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
-            FoodBudgetCard(totalEntries(selectedEntries), healthProfileViewModel)
+            val dailyNutrients = totalEntries(selectedEntries)
+            FoodBudgetCard(dailyNutrients, healthProfileViewModel)
+            FoodAdvisorCard(dailyNutrients, healthProfileViewModel)
         }
 
         FoodMeal.entries.forEach { meal ->
@@ -614,11 +619,26 @@ fun FoodCameraScreen(
                 modifier = Modifier.align(Alignment.Center).padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Camera access is needed to photograph your meal.", color = Color.White)
-                Button(onClick = { permission.launch(Manifest.permission.CAMERA) }, modifier = Modifier.padding(top = 16.dp)) {
+                Text("Take a photo or choose one from your gallery.", color = Color.White)
+                Button(
+                    onClick = { permission.launch(Manifest.permission.CAMERA) },
+                    modifier = Modifier.padding(top = 20.dp).width(220.dp),
+                ) {
                     Text("Allow camera")
                 }
-                TextButton(onClick = onCancel) { Text("Cancel", color = Color.White) }
+                OutlinedButton(
+                    onClick = {
+                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    modifier = Modifier.padding(top = 12.dp).width(220.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                ) {
+                    Text("Choose from gallery")
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.padding(top = 8.dp)) {
+                    Text("Cancel", color = Color.White.copy(alpha = 0.85f))
+                }
             }
         } else {
             CameraPreview(
@@ -1142,6 +1162,40 @@ private fun FoodBudgetCard(nutrients: FoodNutrients, healthViewModel: HealthProf
                 MacroProgress("Protein", nutrients.proteinGrams, proteinGoal, Modifier.weight(1f))
                 MacroProgress("Fat", nutrients.fatGrams, fatGoal, Modifier.weight(1f))
             }
+        }
+    }
+}
+
+@Composable
+private fun FoodAdvisorCard(nutrients: FoodNutrients, healthViewModel: HealthProfileViewModel) {
+    val health by healthViewModel.state.collectAsState()
+    val activityFactor = when (health.profile?.activityLevel) {
+        "HIGH" -> 1.7
+        "MODERATE" -> 1.5
+        else -> 1.2
+    }
+    val budget = (health.metrics?.basalMetabolismKcal ?: 1667) * activityFactor
+    val proteinGoal = budget * 0.20 / 4.0
+    val advice = when {
+        nutrients.calories <= 0.0 -> "No meals are logged for this day. Add meals as you go so the review can reflect your actual intake."
+        nutrients.calories > budget * 1.1 -> "Calories are above the estimated daily budget. Keep the next meal lighter and prioritize vegetables, lean protein, and water."
+        nutrients.proteinGrams < proteinGoal * 0.65 -> "Protein is currently low for the day. Add a protein-rich option such as eggs, yogurt, tofu, fish, or lean meat."
+        nutrients.fiberGrams < 20.0 -> "Fiber is below a practical daily target. Add fruit, vegetables, beans, or whole grains to the next meal."
+        nutrients.calories < budget * 0.6 -> "Logged intake is still well below the estimated budget. Check that no meals are missing and choose a balanced meal if you are still hungry."
+        else -> "Today's logged intake is reasonably balanced. Keep portions steady and choose minimally processed foods for the remaining meals."
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color(0xFFF4F8FF)),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("AI Advisor · Daily review", style = MaterialTheme.typography.titleMedium)
+            Text(
+                advice,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }

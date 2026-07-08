@@ -84,12 +84,24 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
 
     fun loadWeightWindow(selectedDate: LocalDate) {
         val zone = ZoneId.systemDefault()
-        val end = minOf(selectedDate.plusDays(3), LocalDate.now(zone))
-        val from = end.minusDays(6).atStartOfDay(zone).toInstant().toString()
-        val to = end.plusDays(1).atStartOfDay(zone).toInstant().toString()
+        val from = selectedDate.minusDays(6).atStartOfDay(zone).toInstant().toString()
+        val to = selectedDate.plusDays(1).atStartOfDay(zone).toInstant().toString()
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
             repository.entries(type = "WEIGHT", from = from, to = to).fold(
+                onSuccess = { _state.value = _state.value.copy(loading = false, entries = it) },
+                onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
+            )
+        }
+    }
+
+    fun loadRollingWindow(type: String, selectedDate: LocalDate, days: Long) {
+        val zone = ZoneId.systemDefault()
+        val from = selectedDate.minusDays(days - 1).atStartOfDay(zone).toInstant().toString()
+        val to = selectedDate.plusDays(1).atStartOfDay(zone).toInstant().toString()
+        _state.value = _state.value.copy(loading = true, error = null)
+        viewModelScope.launch {
+            repository.entries(type = type, from = from, to = to).fold(
                 onSuccess = { _state.value = _state.value.copy(loading = false, entries = it) },
                 onFailure = { _state.value = _state.value.copy(loading = false, error = it.message) },
             )

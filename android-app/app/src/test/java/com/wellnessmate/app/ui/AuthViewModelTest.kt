@@ -1,7 +1,7 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
-import com.wellnessmate.app.data.AuthRepository
-import com.wellnessmate.app.data.SessionUser
+import com.alpinefitness.app.data.AuthRepository
+import com.alpinefitness.app.data.SessionUser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest

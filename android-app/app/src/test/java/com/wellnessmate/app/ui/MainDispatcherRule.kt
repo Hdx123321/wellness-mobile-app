@@ -1,4 +1,4 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

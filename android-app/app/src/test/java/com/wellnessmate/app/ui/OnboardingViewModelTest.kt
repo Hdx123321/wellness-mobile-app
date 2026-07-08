@@ -1,8 +1,8 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
-import com.wellnessmate.app.data.OnboardingQuestion
-import com.wellnessmate.app.data.OnboardingRepository
-import com.wellnessmate.app.data.OnboardingRequest
+import com.alpinefitness.app.data.OnboardingQuestion
+import com.alpinefitness.app.data.OnboardingRepository
+import com.alpinefitness.app.data.OnboardingRequest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest

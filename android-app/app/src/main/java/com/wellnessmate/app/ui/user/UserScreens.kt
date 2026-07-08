@@ -69,15 +69,19 @@ fun UserManagementScreen(
 @Composable
 fun ReminderScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val settings = remember { ReminderScheduler.settings(context) }
+    var settings by remember { mutableStateOf(ReminderScheduler.settings(context)) }
     var enabled by remember { mutableStateOf(settings.enabled) }
     var showEditor by remember { mutableStateOf(false) }
 
     // ── Save on toggle ──
     fun saveToggle(on: Boolean) {
+        val next = settings.copy(enabled = on)
         enabled = on
-        val s = ReminderScheduler.settings(context)
-        ReminderScheduler.save(context, s.copy(enabled = on))
+        settings = next
+        ReminderScheduler.save(context, next)
+    }
+    val togglePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) saveToggle(true)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -97,7 +101,16 @@ fun ReminderScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = { showEditor = true }) { Icon(painterResource(com.alpinefitness.app.R.drawable.ic_settings), "Edit", tint = MaterialTheme.colorScheme.primary) }
-                Switch(checked = enabled, onCheckedChange = { saveToggle(it) })
+                Switch(checked = enabled, onCheckedChange = { next ->
+                    if (next && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.POST_NOTIFICATIONS,
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        togglePermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        saveToggle(next)
+                    }
+                })
             }
         }
     }
@@ -116,10 +129,16 @@ fun ReminderScreen(onBack: () -> Unit) {
             if (granted) {
                 val h = editHour.toIntOrNull() ?: 20
                 val m = editMinute.toIntOrNull() ?: 0
-                ReminderScheduler.save(context, ReminderSettings(enabled, h, m,
+                val next = ReminderSettings(enabled, h, m,
                     editTitle.ifBlank { "WellnessMate daily check-in" },
-                    editContent.ifBlank { "Review today's trackers and record anything missing." }))
+                    editContent.ifBlank { "Review today's trackers and record anything missing." })
+                ReminderScheduler.save(context, next)
+                settings = next
                 editMessage = "Saved for %02d:%02d.".format(h, m)
+                scope.launch {
+                    sheetState.hide()
+                    showEditor = false
+                }
             } else {
                 editMessage = "Notifications are disabled."
             }
@@ -183,9 +202,11 @@ fun ReminderScreen(onBack: () -> Unit) {
                             ) != PackageManager.PERMISSION_GRANTED) {
                             permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                            ReminderScheduler.save(context, ReminderSettings(enabled, h!!, m!!,
+                            val next = ReminderSettings(enabled, h!!, m!!,
                                 editTitle.ifBlank { "WellnessMate daily check-in" },
-                                editContent.ifBlank { "Review today's trackers and record anything missing." }))
+                                editContent.ifBlank { "Review today's trackers and record anything missing." })
+                            ReminderScheduler.save(context, next)
+                            settings = next
                             editMessage = "Saved."
                             scope.launch {
                                 sheetState.hide()

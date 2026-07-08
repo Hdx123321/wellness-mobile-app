@@ -70,7 +70,10 @@ object ReminderScheduler {
     }
 
     fun schedule(context: Context, key: String, settings: ReminderSettings = settings(context, key)) {
-        if (!settings.enabled) return
+        if (!settings.enabled) {
+            cancel(context, key)
+            return
+        }
         val trigger = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, settings.hour)
             set(Calendar.MINUTE, settings.minute)
@@ -79,10 +82,10 @@ object ReminderScheduler {
             if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
         }
         val alarm = context.getSystemService(AlarmManager::class.java)
-        alarm.setInexactRepeating(
+        alarm.cancel(pendingIntent(context, key))
+        alarm.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             trigger.timeInMillis,
-            AlarmManager.INTERVAL_DAY,
             pendingIntent(context, key),
         )
     }
@@ -121,6 +124,8 @@ class ReminderReceiver : BroadcastReceiver() {
             ReminderScheduler.scheduleAll(context)
             return
         }
+        val key = intent.getStringExtra("reminder_key") ?: ReminderScheduler.DAILY_KEY
+        ReminderScheduler.schedule(context, key)
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS,
             ) != PackageManager.PERMISSION_GRANTED) return
@@ -132,7 +137,6 @@ class ReminderReceiver : BroadcastReceiver() {
             context, 0, Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val key = intent.getStringExtra("reminder_key") ?: ReminderScheduler.DAILY_KEY
         val s = ReminderScheduler.settings(context, key)
         val notification = NotificationCompat.Builder(context, "daily-wellness")
             .setSmallIcon(R.drawable.ic_notification)
@@ -141,6 +145,6 @@ class ReminderReceiver : BroadcastReceiver() {
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .build()
-        NotificationManagerCompat.from(context).notify(4101, notification)
+        NotificationManagerCompat.from(context).notify(4101 + key.hashCode(), notification)
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +70,6 @@ import com.alpinefitness.app.reminder.ReminderScheduler
 import com.alpinefitness.app.reminder.ReminderSettings
 import com.alpinefitness.app.ui.TrackerViewModel
 import java.time.LocalDate
-import java.time.YearMonth
 import kotlin.math.roundToInt
 
 @Composable
@@ -88,13 +88,18 @@ fun StepsTrackerScreen(
     val entries = state.entries.filter { it.type == "STEPS" }
     val visibleEntries = when (period) {
         1 -> entries.filter { entryDate(it) in selectedDate.minusDays(6)..selectedDate }
-        2 -> entries.filter { YearMonth.from(entryDate(it)) == YearMonth.from(selectedDate) }
+        2 -> entries.filter { entryDate(it) in selectedDate.minusDays(29)..selectedDate }
         else -> entries.filter { entryDate(it) == selectedDate }
     }
     val steps = visibleEntries.sumOf { it.amount }.roundToInt()
     val progress = (steps.toFloat() / goal).coerceIn(0f, 1f)
     val distanceKm = steps * 0.00075
     val calories = (steps * 0.04).roundToInt()
+
+    LaunchedEffect(period, selectedDate) {
+        if (period == 2) viewModel.loadRollingWindow("STEPS", selectedDate, 30)
+        else viewModel.loadDate(selectedDate)
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(Color(0xFFF5F6FA)).padding(horizontal = 18.dp),
@@ -119,14 +124,12 @@ fun StepsTrackerScreen(
                         selected = period,
                         onSelected = { next ->
                             period = next
-                            if (next == 2) viewModel.loadMonth("STEPS", YearMonth.from(selectedDate))
-                            else viewModel.loadDate(selectedDate)
                         },
                     )
                     Text(
                         when (period) {
                             1 -> "Last 7 days"
-                            2 -> "${selectedDate.year}/${selectedDate.monthValue}"
+                            2 -> "${selectedDate.minusDays(29)} - $selectedDate"
                             else -> "${selectedDate.monthValue}/${selectedDate.dayOfMonth}"
                         },
                         style = MaterialTheme.typography.headlineSmall,

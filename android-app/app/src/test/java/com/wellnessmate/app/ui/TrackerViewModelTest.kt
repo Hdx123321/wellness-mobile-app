@@ -1,9 +1,9 @@
-package com.wellnessmate.app.ui
+package com.alpinefitness.app.ui
 
-import com.wellnessmate.app.data.TrackerEntryRequest
-import com.wellnessmate.app.data.TrackerEntryResponse
-import com.wellnessmate.app.data.TrackerRepository
-import com.wellnessmate.app.data.TrackerTypeResponse
+import com.alpinefitness.app.data.TrackerEntryRequest
+import com.alpinefitness.app.data.TrackerEntryResponse
+import com.alpinefitness.app.data.TrackerRepository
+import com.alpinefitness.app.data.TrackerTypeResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest

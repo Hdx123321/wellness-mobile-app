@@ -1,5 +1,6 @@
 package com.alpinefitness.app.ui.tracker
 
+import android.widget.NumberPicker
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -292,14 +294,6 @@ fun MainTrackerNav(
                             onBack = { navController.popBackStack() },
                         )
                     }
-                    "WATER" -> {
-                        WaterTrackerScreen(
-                            viewModel = viewModel,
-                            selectedDate = selectedDate,
-                            onEdit = { navController.navigate("form/${it.type}/${it.id}") },
-                            onBack = { navController.popBackStack() },
-                        )
-                    }
                     "SLEEP" -> {
                         SleepTrackerScreen(
                             viewModel = viewModel,
@@ -520,7 +514,7 @@ private fun HomeScreen(
     var showTrackerPicker by rememberSaveable { mutableStateOf(false) }
     val primaryTypes = state.types.filter { it.type in PRIMARY_TRACKERS }
         .sortedBy { PRIMARY_TRACKERS.indexOf(it.type) }
-    val optionalTypes = state.types.filter { it.type !in PRIMARY_TRACKERS }
+    val optionalTypes = state.types.filter { it.type !in PRIMARY_TRACKERS && it.type !in REMOVED_TRACKERS }
     if (state.loading) return LoadingState()
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item {
@@ -855,9 +849,8 @@ private fun TrackerDetailScreen(
     val entries = state.entries.filter { it.type == type }
     val selectedEntries = entries.filter { entryDate(it) == selectedDate }
     val definition = state.types.firstOrNull { it.type == type }
-    val chartEnd = minOf(selectedDate.plusDays(3), LocalDate.now())
     val chart = (6 downTo 0).map { offset ->
-        val date = chartEnd.minusDays(offset.toLong())
+        val date = selectedDate.minusDays(offset.toLong())
         val dayEntries = entries.filter { entryDate(it) == date }
         val value = if (type == "WEIGHT") dayEntries.maxByOrNull { it.recordedAt }?.amount ?: 0.0
             else dayEntries.sumOf { it.amount }
@@ -1587,6 +1580,29 @@ private fun TrackerFormScreen(
     val state by viewModel.state.collectAsState()
     val definition = state.types.firstOrNull { it.type == type }
     val existing = id?.let { target -> state.entries.firstOrNull { it.id == target } }
+    if (type == "SLEEP") {
+        SleepDurationFormScreen(
+            existing = existing,
+            selectedDate = selectedDate,
+            saving = state.saving,
+            error = state.error,
+            onSave = { hours, minutes, notes ->
+                viewModel.save(
+                    id = id,
+                    request = TrackerEntryRequest(
+                        type = "SLEEP",
+                        recordedAt = existing?.recordedAt ?: recordedAt(selectedDate),
+                        amount = hours + minutes / 60.0,
+                        detail = existing?.detail,
+                        notes = notes.ifBlank { null },
+                    ),
+                    onSaved = onDone,
+                )
+            },
+            onDone = onDone,
+        )
+        return
+    }
     var initialized by rememberSaveable(id) { mutableStateOf(false) }
     var amount by rememberSaveable(id) { mutableStateOf("") }
     var detail by rememberSaveable(id) { mutableStateOf("") }
@@ -1677,6 +1693,85 @@ private fun TrackerFormScreen(
     }
 }
 
+@Composable
+private fun SleepDurationFormScreen(
+    existing: TrackerEntryResponse?,
+    selectedDate: LocalDate,
+    saving: Boolean,
+    error: String?,
+    onSave: (Int, Int, String) -> Unit,
+    onDone: () -> Unit,
+) {
+    val initialHours = existing?.amount?.toInt()?.coerceIn(0, 23) ?: 8
+    val initialMinutes = existing?.amount
+        ?.let { ((it - it.toInt()) * 60).roundToInt().coerceIn(0, 59) } ?: 0
+    var hours by rememberSaveable(existing?.id) { mutableStateOf(initialHours) }
+    var minutes by rememberSaveable(existing?.id) { mutableStateOf(initialMinutes) }
+    var notes by rememberSaveable(existing?.id) { mutableStateOf(existing?.notes.orEmpty()) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+        Text(
+            if (existing == null) "Add sleep" else "Edit sleep",
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        Text(selectedDate.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
+        ) {
+            DurationWheel("Hours", 23, hours, { hours = it }, Modifier.weight(1f))
+            DurationWheel("Minutes", 59, minutes, { minutes = it }, Modifier.weight(1f))
+        }
+        Text(
+            "%02d h %02d min".format(hours, minutes),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        OutlinedTextField(
+            value = notes,
+            onValueChange = { notes = it },
+            label = { Text(stringResource(R.string.notes_optional)) },
+            minLines = 3,
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+        )
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
+        Button(
+            onClick = { onSave(hours, minutes, notes) },
+            enabled = !saving && (hours > 0 || minutes > 0),
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+        ) { Text(if (saving) "Saving..." else stringResource(R.string.save)) }
+        TextButton(onClick = onDone, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text(stringResource(R.string.cancel))
+        }
+    }
+}
+
+@Composable
+private fun DurationWheel(
+    label: String,
+    maxValue: Int,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.titleMedium)
+        AndroidView(
+            factory = { context ->
+                NumberPicker(context).apply {
+                    minValue = 0
+                    this.maxValue = maxValue
+                    wrapSelectorWheel = true
+                    setFormatter { "%02d".format(it) }
+                    setOnValueChangedListener { _, _, newValue -> onValueChange(newValue) }
+                }
+            },
+            update = { picker -> if (picker.value != value) picker.value = value },
+            modifier = Modifier.height(180.dp).fillMaxWidth(),
+        )
+    }
+}
+
 fun recordedAt(date: LocalDate): String {
     val zone = ZoneId.systemDefault()
     return if (date == LocalDate.now(zone)) Instant.now().toString()
@@ -1707,6 +1802,7 @@ fun ErrorBanner(error: String?, dismiss: () -> Unit) {
 }
 
 private val PRIMARY_TRACKERS = listOf("FOOD", "WEIGHT", "WORKOUT")
+private val REMOVED_TRACKERS = setOf("WATER", "MEDICINE")
 
 private fun trackerIconRes(type: String): Int = when (type) {
     "FOOD" -> com.alpinefitness.app.R.drawable.ic_food
