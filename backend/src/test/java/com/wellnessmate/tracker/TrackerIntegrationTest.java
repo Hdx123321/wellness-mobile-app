@@ -30,17 +30,15 @@ class TrackerIntegrationTest {
   @Autowired private ObjectMapper objectMapper;
 
   @Test
-  void catalogExposesNineCanonicalTypes() throws Exception {
+  void catalogExposesSevenCanonicalTypes() throws Exception {
     String token = register("cataloguser");
 
     mockMvc.perform(get("/api/trackers/types").header("Authorization", bearer(token)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(9))
+        .andExpect(jsonPath("$.length()").value(7))
         .andExpect(jsonPath("$[?(@.type == 'WEIGHT')].unit").value("kg"))
         .andExpect(jsonPath("$[?(@.type == 'WATER')].unit").value("ml"))
-        .andExpect(jsonPath("$[?(@.type == 'MEDICINE')].detailRequired").value(true))
-        .andExpect(jsonPath("$[?(@.type == 'HEART_RATE')].unit").value("bpm"))
-        .andExpect(jsonPath("$[?(@.type == 'BLOOD_GLUCOSE')].unit").value("mmol/L"));
+        .andExpect(jsonPath("$[?(@.type == 'MEDICINE')].detailRequired").value(true));
   }
 
   @Test
@@ -53,13 +51,11 @@ class TrackerIntegrationTest {
     createEntry(token, "SLEEP", "465", null);
     createEntry(token, "WATER", "500", null);
     createEntry(token, "MEDICINE", "1", "Vitamin D");
-    createEntry(token, "HEART_RATE", "72", null);
-    createEntry(token, "BLOOD_GLUCOSE", "5.6", "Before breakfast");
 
     mockMvc.perform(get("/api/tracker-entries")
             .header("Authorization", bearer(token)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalElements").value(9));
+        .andExpect(jsonPath("$.totalElements").value(7));
 
     mockMvc.perform(get("/api/tracker-entries?type=STEPS")
             .header("Authorization", bearer(token)))

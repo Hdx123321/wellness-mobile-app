@@ -48,9 +48,21 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         submit { repository.login(identifier, password) }
     }
 
-    fun register(username: String, email: String, password: String, displayName: String) {
-        if (username.length < 3 || !email.contains('@') || password.length < 8) {
-            _uiState.value = AuthUiState(error = "Use a valid username, email, and password of at least 8 characters.")
+    fun register(username: String, email: String, password: String, confirmPassword: String, displayName: String) {
+        if (username.length < 3) {
+            _uiState.value = AuthUiState(error = "Username must contain at least 3 characters.")
+            return
+        }
+        if (!email.contains('@')) {
+            _uiState.value = AuthUiState(error = "Enter a valid email address.")
+            return
+        }
+        if (password.length < 8) {
+            _uiState.value = AuthUiState(error = "Password must contain at least 8 characters.")
+            return
+        }
+        if (password != confirmPassword) {
+            _uiState.value = AuthUiState(error = "Passwords do not match.")
             return
         }
         submit { repository.register(username, email, password, displayName.ifBlank { null }) }

@@ -1,6 +1,7 @@
 package com.alpinefitness.app.ui.tracker
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -181,36 +183,21 @@ fun MainTrackerNav(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     if (user.role == "COACH") {
-                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                                Text("Plans", style = MaterialTheme.typography.labelSmall)
-                            }
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_plan, "Plans", route == PLANS) {
+                            navController.navigate(PLANS) { launchSingleTop = true }
                         }
-                        TextButton(onClick = { navController.navigate(COACH) { launchSingleTop = true } }) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_message), "Messages", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                                Text("Messages", style = MaterialTheme.typography.labelSmall)
-                            }
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_message, "Messages", route == COACH) {
+                            navController.navigate(COACH) { launchSingleTop = true }
                         }
                     } else {
-                        TextButton(onClick = { navController.navigate(HOME) { launchSingleTop = true } }) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_home), "Home", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                                Text("Home", style = MaterialTheme.typography.labelSmall)
-                            }
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_home, "Home", route == HOME) {
+                            navController.navigate(HOME) { launchSingleTop = true }
                         }
-                        TextButton(onClick = { navController.navigate(ADVISOR) { launchSingleTop = true } }) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_cube), "AI Advisor", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                                Text("AI Advisor", style = MaterialTheme.typography.labelSmall)
-                            }
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_cube, "AI Advisor", route == ADVISOR) {
+                            navController.navigate(ADVISOR) { launchSingleTop = true }
                         }
-                        TextButton(onClick = { navController.navigate(PLANS) { launchSingleTop = true } }) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "Plans", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                                Text("Plans", style = MaterialTheme.typography.labelSmall)
-                            }
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_plan, "Plans", route == PLANS) {
+                            navController.navigate(PLANS) { launchSingleTop = true }
                         }
                     }
                 }
@@ -325,7 +312,10 @@ fun MainTrackerNav(
                             onEdit = { navController.navigate("form/${it.type}/${it.id}") },
                             onAdd = { navController.navigate("form/$it/-1") },
                             onBack = {
-                                if (trackerType == "WEIGHT") healthProfileViewModel.refresh()
+                                if (trackerType == "WEIGHT") {
+                                    healthProfileViewModel.refresh()
+                                    viewModel.loadDate(selectedDate)
+                                }
                                 navController.popBackStack()
                             },
                             onWeightTrends = { navController.navigate(WEIGHT_TRENDS) },
@@ -467,6 +457,22 @@ fun MainTrackerNav(
             },
             dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
         ) { DatePicker(state = pickerState) }
+    }
+}
+
+@Composable
+private fun BottomNavButton(iconRes: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.background(
+            if (selected) Color(0xFFE2F4EA) else Color.Transparent,
+            RoundedCornerShape(16.dp),
+        ),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(painterResource(iconRes), label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall)
+        }
     }
 }
 
@@ -829,8 +835,9 @@ private fun TrackerDetailScreen(
     val entries = state.entries.filter { it.type == type }
     val selectedEntries = entries.filter { entryDate(it) == selectedDate }
     val definition = state.types.firstOrNull { it.type == type }
+    val chartEnd = minOf(selectedDate.plusDays(3), LocalDate.now())
     val chart = (6 downTo 0).map { offset ->
-        val date = selectedDate.minusDays(offset.toLong())
+        val date = chartEnd.minusDays(offset.toLong())
         val dayEntries = entries.filter { entryDate(it) == date }
         val value = if (type == "WEIGHT") dayEntries.maxByOrNull { it.recordedAt }?.amount ?: 0.0
             else dayEntries.sumOf { it.amount }
@@ -839,6 +846,9 @@ private fun TrackerDetailScreen(
 
     // Weight-specific derived data
     val isWeight = type == "WEIGHT"
+    LaunchedEffect(isWeight, selectedDate) {
+        if (isWeight) viewModel.loadWeightWindow(selectedDate)
+    }
     val profile = profileState.profile
     val latestWeight = selectedEntries.maxByOrNull { it.recordedAt }?.amount
     val latestDetail = selectedEntries.maxByOrNull { it.recordedAt }?.detail

@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.alpinefitness.app.BuildConfig
 import com.alpinefitness.app.data.SessionUser
 import com.alpinefitness.app.data.TrainingPlanRequest
 import com.alpinefitness.app.data.TrainingPlanResponse
@@ -112,7 +113,7 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
                         Text("Plans published by WellnessMate coaches")
                     }
                     if (user.role == "COACH") IconButton(onClick = { creating = true }) {
-                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_plan), "Publish training plan", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(painterResource(com.alpinefitness.app.R.drawable.ic_add_one), "Publish training plan", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
                 state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -191,7 +192,7 @@ private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel:
                             block.content?.let { Text(it, modifier = Modifier.padding(top = 4.dp)) }
                             // Inline image display
                             block.imageUrl?.let { url ->
-                                val fullUrl = if (url.startsWith("/api")) "http://10.0.2.2:18080$url" else url
+                                val fullUrl = if (url.startsWith("/api")) BuildConfig.API_BASE_URL.trimEnd('/') + url else url
                                 AsyncImage(
                                     model = ImageRequest.Builder(LocalContext.current).data(fullUrl)
                                         .build(),
@@ -203,17 +204,25 @@ private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel:
                             }
                             // Inline video display
                             block.videoUrl?.let { url ->
-                                val fullUrl = if (url.startsWith("/api")) "http://10.0.2.2:18080$url" else url
-                                AndroidView(
-                                    factory = { ctx ->
-                                        VideoView(ctx).apply {
-                                            setVideoPath(fullUrl)
-                                            setOnPreparedListener { start() }
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(220.dp).padding(top = 8.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
-                                )
+                                val fullUrl = if (url.startsWith("/api")) BuildConfig.API_BASE_URL.trimEnd('/') + url else url
+                                if (url.startsWith("/api")) {
+                                    AndroidView(
+                                        factory = { ctx ->
+                                            VideoView(ctx).apply {
+                                                setVideoPath(fullUrl)
+                                                setOnPreparedListener { start() }
+                                                setOnErrorListener { _, _, _ -> true }
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth().height(220.dp).padding(top = 8.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                    )
+                                } else {
+                                    OutlinedButton(
+                                        onClick = { uriHandler.openUri(url) },
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                    ) { Text("▶ Watch this workout video") }
+                                }
                             }
                         }
                     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -137,7 +138,13 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
                 items(state.messages, key = { it.id }) { message ->
                     Row(modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = if (message.role == "USER") Arrangement.End else Arrangement.Start) {
-                        Card(modifier = Modifier.fillMaxWidth(0.86f)) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(0.86f),
+                            colors = if (message.role == "USER") CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ) else CardDefaults.cardColors(),
+                        ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(if (message.role == "USER") "You" else "AI advisor", style = MaterialTheme.typography.labelMedium)
                                 if (message.role == "USER") Text(message.content)

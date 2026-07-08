@@ -371,7 +371,7 @@ fun FoodSelectionScreen(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
-                                cat.nameCn,
+                                cat.name,
                                 style = if (state.selectedCategoryId == cat.id) MaterialTheme.typography.titleSmall
                                 else MaterialTheme.typography.bodyMedium,
                             )

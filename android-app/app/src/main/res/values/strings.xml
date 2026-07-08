@@ -7,6 +7,7 @@
     <string name="email">Email</string>
     <string name="display_name">Display name (optional)</string>
     <string name="password">Password</string>
+    <string name="confirm_password">Confirm password</string>
     <string name="login">Log in</string>
     <string name="register">Register</string>
     <string name="have_account">Already have an account?</string>

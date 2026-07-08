@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -143,122 +145,99 @@ fun WeightLineChart(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
 ) {
-    val data = values.filter { it.second > 0.0 }
-    if (data.isEmpty()) {
-        Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-            Text("Last 7 days · $unit", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "No data available",
-                modifier = Modifier.padding(vertical = 24.dp),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        return
-    }
-    val lineColor = Color(0xFF4A90D9)
-    val fillColor = Color(0x334A90D9)
-    val max = data.maxOf { it.second }
-    val range = max.coerceAtLeast(1.0)
-
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text("Last 7 days · $unit", style = MaterialTheme.typography.titleMedium)
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-                .padding(start = 8.dp, end = 8.dp, top = 12.dp, bottom = 24.dp)
-                .clickable { onClick() }
-        ) {
-            val chartWidth = size.width
-            val chartHeight = size.height
-            val slotWidth = if (data.size > 1) chartWidth / (data.size - 1) else chartWidth
-
-            for (i in 0..4) {
-                val y = chartHeight * i / 4
-                drawLine(Color.LightGray, Offset(0f, y), Offset(chartWidth, y), 1f)
-            }
-
-            if (data.size == 1) {
-                val cx = chartWidth / 2
-                val cy = (chartHeight * (1 - data[0].second / range)).toFloat()
-                drawCircle(lineColor, radius = 6f, center = Offset(cx, cy))
-            } else {
-                val fillPath = Path().apply {
-                    moveTo(0f, chartHeight)
-                    data.forEachIndexed { i, (_, v) ->
-                        lineTo(i * slotWidth, (chartHeight * (1 - v / range)).toFloat())
-                    }
-                    lineTo((data.size - 1) * slotWidth, chartHeight)
-                    close()
-                }
-                drawPath(fillPath, fillColor)
-
-                val linePath = Path()
-                data.forEachIndexed { i, (_, v) ->
-                    val x = i * slotWidth
-                    val y = (chartHeight * (1 - v / range)).toFloat()
-                    if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
-                }
-                drawPath(linePath, lineColor, style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-
-                data.forEachIndexed { i, (_, v) ->
-                    val cx = i * slotWidth
-                    val cy = (chartHeight * (1 - v / range)).toFloat()
-                    drawCircle(lineColor, radius = 5f, center = Offset(cx, cy))
-                    drawCircle(Color.White, radius = 2.5f, center = Offset(cx, cy))
-                }
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-            data.forEach { (date, _) ->
-                Text(
-                    "${date.monthValue}/${date.dayOfMonth}",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-        }
+        WeightPlot(values, compact = false, modifier = Modifier.clickable { onClick() })
     }
 }
+
+private fun formatChartValue(value: Double): String =
+    if (value % 1.0 == 0.0) value.toLong().toString() else "%.1f".format(value)
 
 @Composable
 fun MiniWeightLineChart(
     values: List<Pair<LocalDate, Double>>,
     modifier: Modifier = Modifier,
 ) {
-    val data = values.filter { it.second > 0.0 }
-    if (data.isEmpty()) return
+    WeightPlot(values, compact = true, modifier = modifier)
+}
+
+@Composable
+private fun WeightPlot(values: List<Pair<LocalDate, Double>>, compact: Boolean, modifier: Modifier = Modifier) {
+    val slots = values.takeLast(7)
+    val data = slots.map { it.second }.filter { it > 0.0 }
+    val rawMin = data.minOrNull() ?: 0.0
+    val rawMax = data.maxOrNull() ?: 1.0
+    val axisPadding = ((rawMax - rawMin) * 0.15).coerceAtLeast(0.5)
+    val axisMin = (rawMin - axisPadding).coerceAtLeast(0.0)
+    val axisMax = rawMax + axisPadding
+    val axisRange = (axisMax - axisMin).coerceAtLeast(1.0)
+    val ticks = if (compact) 2 else 3
+    val plotHeight = if (compact) 64.dp else 150.dp
+    val axisWidth = if (compact) 36.dp else 44.dp
     val lineColor = Color(0xFF4A90D9)
-    val minimum = data.minOf { it.second }
-    val range = (data.maxOf { it.second } - minimum).coerceAtLeast(1.0)
-    Column(modifier = modifier.fillMaxWidth()) {
-        Canvas(modifier = Modifier.fillMaxWidth().height(48.dp)) {
-            val step = if (data.size > 1) size.width / (data.size - 1) else 0f
-            val path = Path()
-            val points = mutableListOf<Offset>()
-            data.forEachIndexed { index, (_, value) ->
-                val x = if (data.size == 1) size.width / 2f else index * step
-                val y = size.height - ((value - minimum) / range * size.height * 0.80 + size.height * 0.10).toFloat()
-                points += Offset(x, y)
-                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+
+    Column(modifier = modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.width(axisWidth).height(plotHeight),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.End,
+            ) {
+                repeat(ticks) { index ->
+                    Text(
+                        formatChartValue(axisMax - index * axisRange / (ticks - 1)),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
             }
-            drawPath(path, lineColor, style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-            points.forEach { point ->
-                drawCircle(Color.White, radius = 7f, center = point)
-                drawCircle(lineColor, radius = 5f, center = point)
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) {
-            data.forEach { (date, _) ->
-                Text(
-                    "${date.monthValue}/${date.dayOfMonth}",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelSmall,
+            Canvas(modifier = Modifier.weight(1f).height(plotHeight).padding(start = 6.dp)) {
+                repeat(ticks) { index ->
+                    val y = size.height * index / (ticks - 1)
+                    drawLine(Color.LightGray, Offset(0f, y), Offset(size.width, y), 1f)
+                }
+                val slotWidth = size.width / slots.size.coerceAtLeast(1)
+                val path = Path()
+                var started = false
+                slots.forEachIndexed { index, (_, value) ->
+                    if (value <= 0.0) return@forEachIndexed
+                    val x = slotWidth * (index + 0.5f)
+                    val y = (size.height * (1 - (value - axisMin) / axisRange)).toFloat()
+                    if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
+                }
+                if (started) drawPath(
+                    path, lineColor,
+                    style = Stroke(if (compact) 2.5f else 3f, cap = StrokeCap.Round, join = StrokeJoin.Round),
                 )
+                slots.forEachIndexed { index, (_, value) ->
+                    if (value <= 0.0) return@forEachIndexed
+                    val point = Offset(
+                        slotWidth * (index + 0.5f),
+                        (size.height * (1 - (value - axisMin) / axisRange)).toFloat(),
+                    )
+                    drawCircle(Color.White, radius = if (compact) 6f else 7f, center = point)
+                    drawCircle(lineColor, radius = if (compact) 4f else 5f, center = point)
+                }
             }
         }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.width(axisWidth + 6.dp))
+            Row(modifier = Modifier.weight(1f)) {
+                slots.forEach { (date, _) ->
+                    Text(
+                        "${date.monthValue}/${date.dayOfMonth}",
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+        }
+        if (data.isEmpty()) Text(
+            "No weight data",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
     }
 }
 
