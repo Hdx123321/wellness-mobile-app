@@ -41,6 +41,7 @@ fun LoginRegisterScreen(viewModel: AuthViewModel) {
     var email by rememberSaveable { mutableStateOf("") }
     var displayName by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -97,6 +98,17 @@ fun LoginRegisterScreen(viewModel: AuthViewModel) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         )
+        if (registering) {
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text(stringResource(R.string.confirm_password)) },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+        }
 
         state.error?.let {
             Text(
@@ -108,7 +120,7 @@ fun LoginRegisterScreen(viewModel: AuthViewModel) {
 
         Button(
             onClick = {
-                if (registering) viewModel.register(username, email, password, displayName)
+                if (registering) viewModel.register(username, email, password, confirmPassword, displayName)
                 else viewModel.login(identifier, password)
             },
             enabled = !state.submitting,
@@ -126,6 +138,12 @@ fun LoginRegisterScreen(viewModel: AuthViewModel) {
             Text(stringResource(if (registering) R.string.have_account else R.string.need_account))
             TextButton(onClick = {
                 registering = !registering
+                identifier = ""
+                username = ""
+                email = ""
+                displayName = ""
+                password = ""
+                confirmPassword = ""
                 viewModel.clearError()
             }) {
                 Text(stringResource(if (registering) R.string.login else R.string.register))

@@ -30,7 +30,7 @@ class AuthViewModelTest {
     fun invalidRegistrationStaysSignedOut() = runTest {
         val viewModel = AuthViewModel(FakeAuthRepository())
 
-        viewModel.register("x", "bad", "short", "")
+        viewModel.register("x", "bad", "short", "different", "")
 
         assertTrue(viewModel.session.value is SessionState.SignedOut)
         assertTrue(viewModel.uiState.value.error != null)

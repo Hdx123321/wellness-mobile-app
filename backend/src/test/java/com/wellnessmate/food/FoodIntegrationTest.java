@@ -41,7 +41,7 @@ class FoodIntegrationTest {
         .andExpect(jsonPath("$[0].name").value("Chicken breast / 鸡胸肉"))
         .andExpect(jsonPath("$[0].proteinPer100g").value(31.0))
         .andExpect(jsonPath("$[0].imageUrl")
-            .value("https://loremflickr.com/320/240/chicken,breast,food?lock=101"));
+            .value("https://images.pexels.com/photos/5769376/pexels-photo-5769376.jpeg?auto=compress&cs=tinysrgb&w=640"));
 
     Map<String, Object> request = Map.of(
         "recordedAt", Instant.now().minusSeconds(30).toString(),

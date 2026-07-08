@@ -131,7 +131,7 @@ private fun FoodDetailContent(
     val unitGrams = if (directGramInput) 1.0 else selectedSize?.grams ?: 1.0
     val grams = quantity?.times(unitGrams)
     val factor = (grams ?: 0.0) / 100.0
-    val unitLabel = if (directGramInput) "克" else selectedSize?.let { it.labelCn.ifBlank { it.label } } ?: "克"
+    val unitLabel = if (directGramInput) "g" else selectedSize?.label ?: "g"
 
     LaunchedEffect(selectedSizeId) {
         quantityText = selectedSize?.let(::defaultQuantity) ?: "100"
@@ -174,7 +174,7 @@ private fun FoodDetailContent(
                     FilterChip(
                         selected = selectedSizeId == size.id,
                         onClick = { selectedSizeId = size.id },
-                        label = { Text(if (isGramServing(size)) "克" else size.labelCn.ifBlank { size.label }) },
+                        label = { Text(if (isGramServing(size)) "g" else size.label) },
                     )
                 }
             }
