@@ -48,10 +48,10 @@ public class CoachChatService {
       CoachConversation conversation = conversations.findByClientId(userId).stream()
           .findFirst()
           .orElseGet(() -> assignCoach(userId));
-      return conversation == null ? List.of() : List.of(toResponse(conversation));
+      return conversation == null ? List.of() : List.of(toResponse(conversation, userId));
     }
     return conversations.findByCoachIdOrderByUpdatedAtDesc(userId).stream()
-        .map(this::toResponse).toList();
+        .map(conversation -> toResponse(conversation, userId)).toList();
   }
 
   @Transactional(readOnly = true)
@@ -71,6 +71,14 @@ public class CoachChatService {
     return toResponse(saved);
   }
 
+  @Transactional
+  public void markRead(Long userId, Long conversationId) {
+    CoachConversation conversation = requireParticipant(userId, conversationId);
+    long latestId = messages.findFirstByConversationIdOrderByIdDesc(conversationId)
+        .map(CoachMessage::getId).orElse(0L);
+    conversation.markRead(userId, latestId);
+  }
+
   // ── Coach-initiated conversations ──
 
   @Transactional
@@ -83,10 +91,10 @@ public class CoachChatService {
     // Return existing if already present
     CoachConversation existing = conversations
         .findByClientIdAndCoachId(request.clientId(), coachId).orElse(null);
-    if (existing != null) return toResponse(existing);
+    if (existing != null) return toResponse(existing, coachId);
     CoachConversation saved = conversations.save(
         new CoachConversation(request.clientId(), coachId, request.subject()));
-    return toResponse(saved);
+    return toResponse(saved, coachId);
   }
 
   @Transactional(readOnly = true)
@@ -130,13 +138,15 @@ public class CoachChatService {
     return conversation;
   }
 
-  private CoachConversationResponse toResponse(CoachConversation conversation) {
+  private CoachConversationResponse toResponse(CoachConversation conversation, Long viewerId) {
     String last = messages.findFirstByConversationIdOrderByIdDesc(conversation.getId())
         .map(CoachMessage::getContent).orElse(null);
+    long unreadCount = messages.countByConversationIdAndSenderIdNotAndIdGreaterThan(
+        conversation.getId(), viewerId, conversation.lastReadMessageId(viewerId));
     return new CoachConversationResponse(conversation.getId(),
         conversation.getClientId(), name(conversation.getClientId()),
         conversation.getCoachId(), name(conversation.getCoachId()),
-        conversation.getSubject(), last, conversation.getUpdatedAt());
+        conversation.getSubject(), last, conversation.getUpdatedAt(), unreadCount);
   }
 
   private CoachMessageResponse toResponse(CoachMessage message) {

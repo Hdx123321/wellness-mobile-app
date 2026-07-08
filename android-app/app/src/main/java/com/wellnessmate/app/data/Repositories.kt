@@ -178,6 +178,7 @@ interface CoachChatRepository {
     suspend fun conversations(): Result<List<CoachConversationResponse>>
     suspend fun messages(conversationId: Long, afterId: Long): Result<List<CoachMessageResponse>>
     suspend fun send(conversationId: Long, content: String): Result<CoachMessageResponse>
+    suspend fun markRead(conversationId: Long): Result<Unit>
     suspend fun createConversation(clientId: Long, subject: String?): Result<CoachConversationResponse>
     suspend fun clients(): Result<List<SubscriberResponse>>
 }
@@ -189,6 +190,10 @@ class NetworkCoachChatRepository(private val api: WellnessApi) : CoachChatReposi
     }
     override suspend fun send(conversationId: Long, content: String) = apiResult {
         api.sendCoachMessage(conversationId, CoachMessageRequest(content.trim()))
+    }
+    override suspend fun markRead(conversationId: Long) = apiResult {
+        api.markCoachConversationRead(conversationId)
+        Unit
     }
     override suspend fun createConversation(clientId: Long, subject: String?) = apiResult {
         api.createCoachConversation(CreateConversationRequest(clientId, subject))

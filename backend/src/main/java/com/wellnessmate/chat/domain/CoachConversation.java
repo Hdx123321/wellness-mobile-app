@@ -23,6 +23,10 @@ public class CoachConversation {
   private Instant createdAt;
   @Column(nullable = false)
   private Instant updatedAt;
+  @Column(nullable = false)
+  private Long clientLastReadMessageId = 0L;
+  @Column(nullable = false)
+  private Long coachLastReadMessageId = 0L;
 
   protected CoachConversation() {}
 
@@ -42,6 +46,13 @@ public class CoachConversation {
   }
 
   public void touch(Instant time) { updatedAt = time; }
+  public long lastReadMessageId(Long userId) {
+    return clientId.equals(userId) ? clientLastReadMessageId : coachLastReadMessageId;
+  }
+  public void markRead(Long userId, long messageId) {
+    if (clientId.equals(userId)) clientLastReadMessageId = Math.max(clientLastReadMessageId, messageId);
+    else if (coachId.equals(userId)) coachLastReadMessageId = Math.max(coachLastReadMessageId, messageId);
+  }
   public Long getId() { return id; }
   public Long getClientId() { return clientId; }
   public Long getCoachId() { return coachId; }

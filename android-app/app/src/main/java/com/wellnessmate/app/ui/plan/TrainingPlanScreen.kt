@@ -22,12 +22,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -84,7 +86,8 @@ class BlockEditState(
 }
 
 @Composable
-fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onContactCoach: () -> Unit) {
+fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel,
+                       hasUnreadMessages: Boolean, onContactCoach: () -> Unit) {
     val state by viewModel.state.collectAsState()
     var creating by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf(false) }
@@ -98,6 +101,7 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
     when {
         selected != null && !editing -> PlanDetail(
             plan = selected, user = user, viewModel = viewModel,
+            hasUnreadMessages = hasUnreadMessages,
             onEdit = { editing = true }, onContactCoach = onContactCoach,
             onBack = { viewModel.select(null) })
         creating || editing -> PlanEditor(
@@ -123,9 +127,20 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
             val planList = state.plans
             items(planList.size, key = { planList[it].id }) { index ->
                 val plan = planList[index]
-                Card(Modifier.fillMaxWidth().padding(vertical = 7.dp).clickable { viewModel.select(plan) }) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp)
+                        .clickable { viewModel.select(plan) },
+                    colors = if (user.role == "CLIENT" && plan.subscribed) {
+                        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    } else {
+                        CardDefaults.cardColors()
+                    },
+                ) {
                     Column(Modifier.padding(16.dp)) {
-                        Text(plan.title, style = MaterialTheme.typography.titleLarge)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(plan.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                            if (user.role == "CLIENT" && hasUnreadMessages) UnreadDot()
+                        }
                         Text("${plan.difficulty} · ${plan.durationWeeks} weeks · Coach ${plan.coachName}")
                         if (plan.videoUrl != null) Text("▶ Video included", color = MaterialTheme.colorScheme.primary)
                         Text(plan.goal, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
@@ -139,6 +154,7 @@ fun TrainingPlanScreen(user: SessionUser, viewModel: TrainingPlanViewModel, onCo
 
 @Composable
 private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel: TrainingPlanViewModel,
+                       hasUnreadMessages: Boolean,
                        onEdit: () -> Unit, onContactCoach: () -> Unit, onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val state by viewModel.state.collectAsState()
@@ -253,8 +269,15 @@ private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel:
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Delete plan") }
             }
             if (isClient) {
-                OutlinedButton(onClick = onContactCoach, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                OutlinedButton(
+                    onClick = onContactCoach,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                ) {
                     Text("💬 Message Coach ${plan.coachName}")
+                    if (hasUnreadMessages) {
+                        Spacer(Modifier.width(6.dp))
+                        UnreadDot()
+                    }
                 }
                 if (plan.subscribed) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -281,6 +304,11 @@ private fun PlanDetail(plan: TrainingPlanResponse, user: SessionUser, viewModel:
 @Composable private fun PlanSection(title: String, body: String) {
     Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
     Text(body, modifier = Modifier.padding(top = 4.dp))
+}
+
+@Composable
+private fun UnreadDot() {
+    Box(Modifier.size(9.dp).background(Color(0xFFD32F2F), CircleShape))
 }
 
 @Composable

@@ -142,6 +142,8 @@ fun MainTrackerNav(
     var selectedDateText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     val selectedDate = LocalDate.parse(selectedDateText)
+    val chatState by coachChatViewModel.state.collectAsState()
+    val hasUnreadCoachMessages = chatState.conversations.any { it.unreadCount > 0 }
 
     LaunchedEffect(selectedDateText) {
         viewModel.loadDate(selectedDate)
@@ -150,8 +152,9 @@ fun MainTrackerNav(
 
     Scaffold(
         topBar = {
-            if (route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR
-                && route != USER_MANAGEMENT && route != REMINDER && route != HEALTH_PROFILE && route != HEIGHT_PICKER) TopAppBar(
+            if ((route != FOOD_SELECT && route != FOOD_CAMERA && route != WORKOUT_SELECT && route != PLANS && route != ADVISOR
+                && route != USER_MANAGEMENT && route != REMINDER && route != HEALTH_PROFILE && route != HEIGHT_PICKER)
+                || (user.role == "COACH" && route == PLANS)) TopAppBar(
                 title = {
                     IconButton(onClick = { navController.navigate(USER_MANAGEMENT) }) {
                         Surface(
@@ -170,8 +173,10 @@ fun MainTrackerNav(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { showDatePicker = true }) {
-                        Text("📅 ${selectedDate.monthValue}/${selectedDate.dayOfMonth}")
+                    if (user.role != "COACH") {
+                        TextButton(onClick = { showDatePicker = true }) {
+                            Text("📅 ${selectedDate.monthValue}/${selectedDate.dayOfMonth}")
+                        }
                     }
                 },
             )
@@ -186,7 +191,7 @@ fun MainTrackerNav(
                         BottomNavButton(com.alpinefitness.app.R.drawable.ic_plan, "Plans", route == PLANS) {
                             navController.navigate(PLANS) { launchSingleTop = true }
                         }
-                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_message, "Messages", route == COACH) {
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_message, "Messages", route == COACH, hasUnreadCoachMessages) {
                             navController.navigate(COACH) { launchSingleTop = true }
                         }
                     } else {
@@ -196,7 +201,8 @@ fun MainTrackerNav(
                         BottomNavButton(com.alpinefitness.app.R.drawable.ic_cube, "AI Advisor", route == ADVISOR) {
                             navController.navigate(ADVISOR) { launchSingleTop = true }
                         }
-                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_plan, "Plans", route == PLANS) {
+                        BottomNavButton(com.alpinefitness.app.R.drawable.ic_plan, "Plans", route == PLANS, hasUnreadCoachMessages) {
+                            trainingPlanViewModel.select(null)
                             navController.navigate(PLANS) { launchSingleTop = true }
                         }
                     }
@@ -230,7 +236,7 @@ fun MainTrackerNav(
             composable(ADVISOR) { AiAdvisorScreen(aiAdvisorViewModel) }
             composable(PLANS) {
                 LaunchedEffect(Unit) { trainingPlanViewModel.refresh() }
-                TrainingPlanScreen(user, trainingPlanViewModel) { navController.navigate(COACH) }
+                TrainingPlanScreen(user, trainingPlanViewModel, hasUnreadCoachMessages) { navController.navigate(COACH) }
             }
             composable(COACH) {
                 CoachChatScreen(user, coachChatViewModel)
@@ -461,7 +467,13 @@ fun MainTrackerNav(
 }
 
 @Composable
-private fun BottomNavButton(iconRes: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+private fun BottomNavButton(
+    iconRes: Int,
+    label: String,
+    selected: Boolean,
+    showUnread: Boolean = false,
+    onClick: () -> Unit,
+) {
     TextButton(
         onClick = onClick,
         modifier = Modifier.background(
@@ -470,7 +482,15 @@ private fun BottomNavButton(iconRes: Int, label: String, selected: Boolean, onCl
         ),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(painterResource(iconRes), label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+            Box {
+                Icon(painterResource(iconRes), label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                if (showUnread) {
+                    Box(
+                        Modifier.align(Alignment.TopEnd).size(8.dp)
+                            .background(Color(0xFFD32F2F), CircleShape),
+                    )
+                }
+            }
             Text(label, style = MaterialTheme.typography.labelSmall)
         }
     }

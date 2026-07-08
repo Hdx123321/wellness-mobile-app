@@ -41,6 +41,12 @@ public class CoachChatController {
     return chat.send(userId(jwt), id, request.content());
   }
 
+  @PostMapping("/conversations/{id}/read")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void markRead(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+    chat.markRead(userId(jwt), id);
+  }
+
   @PostMapping("/conversations")
   @ResponseStatus(HttpStatus.CREATED)
   public CoachConversationResponse createConversation(@AuthenticationPrincipal Jwt jwt,

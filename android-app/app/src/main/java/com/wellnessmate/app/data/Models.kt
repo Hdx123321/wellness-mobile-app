@@ -239,6 +239,7 @@ data class CoachConversationResponse(
     val subject: String?,
     val lastMessage: String?,
     val updatedAt: String,
+    val unreadCount: Long = 0,
 )
 
 data class CreateConversationRequest(
