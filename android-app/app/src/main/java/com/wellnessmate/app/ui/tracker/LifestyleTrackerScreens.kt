@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.alpinefitness.app.R
 import com.alpinefitness.app.data.TrackerEntryRequest
 import com.alpinefitness.app.data.TrackerEntryResponse
 import com.alpinefitness.app.reminder.ReminderScheduler
@@ -363,8 +364,13 @@ fun SleepTrackerScreen(
                                 }
                                 Text("Sleep goal", color = Color(0xFF7D8494))
                             }
-                            TextButton(onClick = { showSleepGoalEditor = true }) {
-                                Text("Edit")
+                            IconButton(onClick = { showSleepGoalEditor = true }) {
+                                Icon(
+                                    painterResource(R.drawable.ic_editor),
+                                    "Edit sleep goal",
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
                             }
                         }
                         LinearProgressIndicator(
@@ -640,7 +646,19 @@ private fun SettingsRow(title: String, value: String, onClick: (() -> Unit)? = n
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(if (onClick != null) "$value  Edit" else value, color = Color(0xFF9AA0AE))
+            if (onClick != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(value, color = Color(0xFF9AA0AE))
+                    Icon(
+                        painterResource(R.drawable.ic_editor),
+                        "Edit",
+                        modifier = Modifier.padding(start = 8.dp).size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else {
+                Text(value, color = Color(0xFF9AA0AE))
+            }
         }
     }
 }
@@ -846,6 +864,7 @@ private fun EntrySummaryCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val amountText = if (entry.type == "SLEEP") formatSleep(entry.amount) else "${formatAmount(entry.amount)} ${entry.unit}"
     Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -856,9 +875,25 @@ private fun EntrySummaryCard(
                 Text(entry.detail ?: entry.type.lowercase().replaceFirstChar(Char::uppercase), fontWeight = FontWeight.Medium)
                 Text(formatTime(entry.recordedAt), color = Color(0xFF8E93A3))
             }
-            Text("${formatAmount(entry.amount)} ${entry.unit}")
-            TextButton(onClick = onEdit) { Text("Edit") }
-            TextButton(onClick = onDelete) { Text("Delete") }
+            Text(amountText)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        painterResource(R.drawable.ic_editor),
+                        "Edit",
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        painterResource(R.drawable.ic_delete),
+                        "Delete",
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         }
     }
 }

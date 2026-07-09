@@ -52,7 +52,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
+fun AiAdvisorScreen(
+    viewModel: AiAdvisorViewModel,
+    onDataChanged: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsState()
     var draft by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -186,7 +189,7 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
                     modifier = Modifier.weight(1f),
                 )
                 Button(
-                    onClick = { viewModel.send(draft) { draft = "" } },
+                    onClick = { viewModel.send(draft, onSent = { draft = "" }, onCompleted = onDataChanged) },
                     enabled = draft.isNotBlank() && !state.sending,
                     modifier = Modifier.padding(start = 8.dp),
                 ) {

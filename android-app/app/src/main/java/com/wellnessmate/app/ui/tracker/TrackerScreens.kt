@@ -100,6 +100,7 @@ import com.alpinefitness.app.ui.components.WellnessIconButton
 import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.Period
 import java.time.YearMonth
 import java.time.ZoneId
@@ -235,7 +236,16 @@ fun MainTrackerNav(
                     selectedDate = selectedDate,
                 )
             }
-            composable(ADVISOR) { AiAdvisorScreen(aiAdvisorViewModel) }
+            composable(ADVISOR) {
+                AiAdvisorScreen(
+                    viewModel = aiAdvisorViewModel,
+                    onDataChanged = {
+                        viewModel.loadDate(selectedDate)
+                        foodViewModel.loadDate(selectedDate)
+                        healthProfileViewModel.refresh()
+                    },
+                )
+            }
             composable(PLANS) {
                 LaunchedEffect(Unit) { trainingPlanViewModel.refresh() }
                 TrainingPlanScreen(user, trainingPlanViewModel, hasUnreadCoachMessages) { navController.navigate(COACH) }
@@ -676,7 +686,7 @@ private fun OptionalTrackerCard(
             Column {
                 Text(typeLabel(type.type), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    value?.let { "${formatAmount(it)} ${type.unit}" } ?: "No data",
+                    value?.let { if (type.type == "SLEEP") formatSleepDuration(it) else "${formatAmount(it)} ${type.unit}" } ?: "No data",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -974,7 +984,14 @@ private fun TrackerDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("Weight Goal Progress", style = MaterialTheme.typography.titleMedium)
-                            TextButton(onClick = { showGoalSheet = true }) { Text("Edit Goal") }
+                            IconButton(onClick = { showGoalSheet = true }) {
+                                Icon(
+                                    painterResource(R.drawable.ic_editor),
+                                    "Edit goal",
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
                         Text(
                             "${formatAmount(latestWeight)} kg → ${formatAmount(target)} kg",
@@ -1173,8 +1190,26 @@ private fun TrackerDayRow(
             Text(formatTime(item.recordedAt), style = MaterialTheme.typography.bodySmall)
         }
         if (editable) {
-            TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) }
-            if (deletable) TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        painterResource(R.drawable.ic_editor),
+                        stringResource(R.string.edit),
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                if (deletable) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            painterResource(R.drawable.ic_delete),
+                            stringResource(R.string.delete),
+                            modifier = Modifier.size(22.dp),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -1586,12 +1621,12 @@ private fun TrackerFormScreen(
             selectedDate = selectedDate,
             saving = state.saving,
             error = state.error,
-            onSave = { hours, minutes, notes ->
+            onSave = { hours, minutes, recordedAt, notes ->
                 viewModel.save(
                     id = id,
                     request = TrackerEntryRequest(
                         type = "SLEEP",
-                        recordedAt = existing?.recordedAt ?: recordedAt(selectedDate),
+                        recordedAt = recordedAt,
                         amount = hours + minutes / 60.0,
                         detail = existing?.detail,
                         notes = notes.ifBlank { null },
@@ -1699,17 +1734,22 @@ private fun SleepDurationFormScreen(
     selectedDate: LocalDate,
     saving: Boolean,
     error: String?,
-    onSave: (Int, Int, String) -> Unit,
+    onSave: (Int, Int, String, String) -> Unit,
     onDone: () -> Unit,
 ) {
+    val existingTime = existing?.recordedAt
+        ?.let { value -> runCatching { Instant.parse(value).atZone(ZoneId.systemDefault()).toLocalTime() }.getOrNull() }
+    val defaultTime = if (selectedDate == LocalDate.now()) LocalTime.now() else LocalTime.NOON
     val initialHours = existing?.amount?.toInt()?.coerceIn(0, 23) ?: 8
     val initialMinutes = existing?.amount
         ?.let { ((it - it.toInt()) * 60).roundToInt().coerceIn(0, 59) } ?: 0
     var hours by rememberSaveable(existing?.id) { mutableStateOf(initialHours) }
     var minutes by rememberSaveable(existing?.id) { mutableStateOf(initialMinutes) }
+    var timeHour by rememberSaveable(existing?.id) { mutableStateOf((existingTime ?: defaultTime).hour) }
+    var timeMinute by rememberSaveable(existing?.id) { mutableStateOf((existingTime ?: defaultTime).minute) }
     var notes by rememberSaveable(existing?.id) { mutableStateOf(existing?.notes.orEmpty()) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Text(
             if (existing == null) "Add sleep" else "Edit sleep",
             style = MaterialTheme.typography.headlineMedium,
@@ -1727,6 +1767,23 @@ private fun SleepDurationFormScreen(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
+        Text(
+            "Recorded time",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
+        ) {
+            DurationWheel("Hour", 23, timeHour, { timeHour = it }, Modifier.weight(1f))
+            DurationWheel("Minute", 59, timeMinute, { timeMinute = it }, Modifier.weight(1f))
+        }
+        Text(
+            "%02d:%02d".format(timeHour, timeMinute),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
         OutlinedTextField(
             value = notes,
             onValueChange = { notes = it },
@@ -1736,7 +1793,9 @@ private fun SleepDurationFormScreen(
         )
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
         Button(
-            onClick = { onSave(hours, minutes, notes) },
+            onClick = {
+                onSave(hours, minutes, recordedAt(selectedDate, LocalTime.of(timeHour, timeMinute)), notes)
+            },
             enabled = !saving && (hours > 0 || minutes > 0),
             modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
         ) { Text(if (saving) "Saving..." else stringResource(R.string.save)) }
@@ -1776,6 +1835,10 @@ fun recordedAt(date: LocalDate): String {
     val zone = ZoneId.systemDefault()
     return if (date == LocalDate.now(zone)) Instant.now().toString()
     else date.atTime(12, 0).atZone(zone).toInstant().toString()
+}
+
+private fun recordedAt(date: LocalDate, time: LocalTime): String {
+    return date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toString()
 }
 
 @Composable
@@ -1818,6 +1881,10 @@ private fun trackerIconRes(type: String): Int = when (type) {
 private fun typeLabel(type: String): String = type.lowercase().split('_')
     .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
 fun formatAmount(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else "%.2f".format(value)
+private fun formatSleepDuration(hours: Double): String {
+    val totalMinutes = (hours * 60).roundToInt()
+    return "%dh %02dm".format(totalMinutes / 60, totalMinutes % 60)
+}
 fun formatTime(value: String): String = runCatching {
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         .withZone(ZoneId.systemDefault())

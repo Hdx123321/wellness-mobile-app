@@ -118,7 +118,7 @@ class AiAdvisorViewModel(private val repository: AiAdvisorRepository) : ViewMode
         }
     }
 
-    fun send(content: String, onSent: () -> Unit) {
+    fun send(content: String, onSent: () -> Unit, onCompleted: () -> Unit = {}) {
         if (content.isBlank() || _state.value.sending) return
         val existingId = _state.value.selectedSessionId
         _state.value = _state.value.copy(sending = true, error = null, streamingContent = "", thinkingContent = "", isThinking = false)
@@ -169,6 +169,7 @@ class AiAdvisorViewModel(private val repository: AiAdvisorRepository) : ViewMode
                             sending = false, streamingContent = "", thinkingContent = "", isThinking = false,
                             messages = _state.value.messages + response,
                         )
+                    onCompleted()
                     refreshSessions()
                 },
                 onFailure = { error ->
