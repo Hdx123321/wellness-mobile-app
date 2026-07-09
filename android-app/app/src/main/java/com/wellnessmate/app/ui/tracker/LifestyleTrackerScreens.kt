@@ -333,11 +333,14 @@ fun SleepTrackerScreen(
     var sleepGoalMinutes by rememberSaveable { mutableStateOf(loadIntSetting(context, "sleep_goal_minutes", 480)) }
     var showSleepGoalEditor by rememberSaveable { mutableStateOf(false) }
     val entries = state.entries.filter { it.type == "SLEEP" && entryDate(it) == selectedDate }
-    val hours = entries.sumOf { it.amount }
+    val selectedEntry = entries.maxByOrNull { it.recordedAt }
+    val hours = selectedEntry?.amount ?: 0.0
     val goal = sleepGoalMinutes / 60.0
     val progress = (hours / goal).toFloat().coerceIn(0f, 1f)
     val week = (6 downTo 0).map { selectedDate.minusDays(it.toLong()) }.map { date ->
-        date to state.entries.filter { it.type == "SLEEP" && entryDate(it) == date }.sumOf { it.amount }
+        date to (state.entries
+            .filter { it.type == "SLEEP" && entryDate(it) == date }
+            .maxByOrNull { it.recordedAt }?.amount ?: 0.0)
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F6FA))) {
@@ -419,7 +422,7 @@ fun SleepTrackerScreen(
             }
             if (state.loading) {
                 item { LoadingState() }
-            } else if (entries.isEmpty()) {
+            } else if (selectedEntry == null) {
                 item {
                     Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                         Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -429,14 +432,14 @@ fun SleepTrackerScreen(
                     }
                 }
             } else {
-                items(entries, key = { it.id }) { entry ->
-                    EntrySummaryCard(entry, onEdit = { onEdit(entry) }, onDelete = { viewModel.delete(entry.id) })
+                item(key = selectedEntry.id) {
+                    SleepSummaryCard(selectedEntry, onEdit = { onEdit(selectedEntry) })
                 }
             }
             item { Spacer(Modifier.height(88.dp)) }
         }
         FloatingActionButton(
-            onClick = { onAdd("SLEEP") },
+            onClick = { selectedEntry?.let(onEdit) ?: onAdd("SLEEP") },
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
             containerColor = Color(0xFF5DB130),
         ) { Text("+", style = MaterialTheme.typography.headlineMedium, color = Color.White) }
@@ -893,6 +896,36 @@ private fun EntrySummaryCard(
                         tint = MaterialTheme.colorScheme.error,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SleepSummaryCard(
+    entry: TrackerEntryResponse,
+    onEdit: () -> Unit,
+) {
+    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Today sleep", fontWeight = FontWeight.Medium)
+                entry.notes?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, color = Color(0xFF8E93A3))
+                }
+            }
+            Text(formatSleep(entry.amount), fontWeight = FontWeight.SemiBold)
+            IconButton(onClick = onEdit) {
+                Icon(
+                    painterResource(R.drawable.ic_editor),
+                    "Edit",
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }

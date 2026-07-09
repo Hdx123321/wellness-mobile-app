@@ -100,7 +100,6 @@ import com.alpinefitness.app.ui.components.WellnessIconButton
 import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.Period
 import java.time.YearMonth
 import java.time.ZoneId
@@ -605,9 +604,14 @@ private fun HomeScreen(
                     val dayEntries = state.entries.filter {
                         it.type == type.type && entryDate(it) == selectedDate
                     }
+                    val value = if (type.type == "SLEEP") {
+                        dayEntries.maxByOrNull { it.recordedAt }?.amount
+                    } else {
+                        dayEntries.sumOf { it.amount }.takeIf { dayEntries.isNotEmpty() }
+                    }
                     OptionalTrackerCard(
                         type = type,
-                        value = dayEntries.sumOf { it.amount }.takeIf { dayEntries.isNotEmpty() },
+                        value = value,
                         onOpen = { onTracker(type.type) },
                         modifier = Modifier.weight(1f),
                     )
@@ -1615,18 +1619,25 @@ private fun TrackerFormScreen(
     val state by viewModel.state.collectAsState()
     val definition = state.types.firstOrNull { it.type == type }
     val existing = id?.let { target -> state.entries.firstOrNull { it.id == target } }
+        ?: if (type == "SLEEP") {
+            state.entries
+                .filter { it.type == "SLEEP" && entryDate(it) == selectedDate }
+                .maxByOrNull { it.recordedAt }
+        } else {
+            null
+        }
     if (type == "SLEEP") {
         SleepDurationFormScreen(
             existing = existing,
             selectedDate = selectedDate,
             saving = state.saving,
             error = state.error,
-            onSave = { hours, minutes, recordedAt, notes ->
+            onSave = { hours, minutes, notes ->
                 viewModel.save(
-                    id = id,
+                    id = existing?.id,
                     request = TrackerEntryRequest(
                         type = "SLEEP",
-                        recordedAt = recordedAt,
+                        recordedAt = existing?.recordedAt ?: recordedAt(selectedDate),
                         amount = hours + minutes / 60.0,
                         detail = existing?.detail,
                         notes = notes.ifBlank { null },
@@ -1734,19 +1745,14 @@ private fun SleepDurationFormScreen(
     selectedDate: LocalDate,
     saving: Boolean,
     error: String?,
-    onSave: (Int, Int, String, String) -> Unit,
+    onSave: (Int, Int, String) -> Unit,
     onDone: () -> Unit,
 ) {
-    val existingTime = existing?.recordedAt
-        ?.let { value -> runCatching { Instant.parse(value).atZone(ZoneId.systemDefault()).toLocalTime() }.getOrNull() }
-    val defaultTime = if (selectedDate == LocalDate.now()) LocalTime.now() else LocalTime.NOON
     val initialHours = existing?.amount?.toInt()?.coerceIn(0, 23) ?: 8
     val initialMinutes = existing?.amount
         ?.let { ((it - it.toInt()) * 60).roundToInt().coerceIn(0, 59) } ?: 0
     var hours by rememberSaveable(existing?.id) { mutableStateOf(initialHours) }
     var minutes by rememberSaveable(existing?.id) { mutableStateOf(initialMinutes) }
-    var timeHour by rememberSaveable(existing?.id) { mutableStateOf((existingTime ?: defaultTime).hour) }
-    var timeMinute by rememberSaveable(existing?.id) { mutableStateOf((existingTime ?: defaultTime).minute) }
     var notes by rememberSaveable(existing?.id) { mutableStateOf(existing?.notes.orEmpty()) }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
@@ -1767,23 +1773,6 @@ private fun SleepDurationFormScreen(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
-        Text(
-            "Recorded time",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 16.dp),
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
-        ) {
-            DurationWheel("Hour", 23, timeHour, { timeHour = it }, Modifier.weight(1f))
-            DurationWheel("Minute", 59, timeMinute, { timeMinute = it }, Modifier.weight(1f))
-        }
-        Text(
-            "%02d:%02d".format(timeHour, timeMinute),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
         OutlinedTextField(
             value = notes,
             onValueChange = { notes = it },
@@ -1794,7 +1783,7 @@ private fun SleepDurationFormScreen(
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
         Button(
             onClick = {
-                onSave(hours, minutes, recordedAt(selectedDate, LocalTime.of(timeHour, timeMinute)), notes)
+                onSave(hours, minutes, notes)
             },
             enabled = !saving && (hours > 0 || minutes > 0),
             modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
@@ -1835,10 +1824,6 @@ fun recordedAt(date: LocalDate): String {
     val zone = ZoneId.systemDefault()
     return if (date == LocalDate.now(zone)) Instant.now().toString()
     else date.atTime(12, 0).atZone(zone).toInstant().toString()
-}
-
-private fun recordedAt(date: LocalDate, time: LocalTime): String {
-    return date.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toString()
 }
 
 @Composable
