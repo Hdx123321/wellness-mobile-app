@@ -52,7 +52,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
+fun AiAdvisorScreen(
+    viewModel: AiAdvisorViewModel,
+    onDataChanged: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsState()
     var draft by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -60,6 +63,10 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
     val scope = rememberCoroutineScope()
     var renameId by rememberSaveable { mutableStateOf<Long?>(null) }
     var renameDraft by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshSessions()
+    }
 
     LaunchedEffect(state.messages.size, state.streamingContent.length) {
         if (state.messages.isNotEmpty() || state.streamingContent.isNotEmpty()) {
@@ -134,7 +141,10 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("AI wellness advisor", style = MaterialTheme.typography.headlineMedium)
-                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                IconButton(onClick = {
+                    viewModel.refreshSessions()
+                    scope.launch { drawerState.open() }
+                }) {
                     Icon(
                         painterResource(com.alpinefitness.app.R.drawable.ic_more),
                         contentDescription = "Chats",
@@ -186,7 +196,7 @@ fun AiAdvisorScreen(viewModel: AiAdvisorViewModel) {
                     modifier = Modifier.weight(1f),
                 )
                 Button(
-                    onClick = { viewModel.send(draft) { draft = "" } },
+                    onClick = { viewModel.send(draft, onSent = { draft = "" }, onCompleted = onDataChanged) },
                     enabled = draft.isNotBlank() && !state.sending,
                     modifier = Modifier.padding(start = 8.dp),
                 ) {

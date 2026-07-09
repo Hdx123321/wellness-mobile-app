@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alpinefitness.app.R
 import com.alpinefitness.app.data.TrackerEntryRequest
 import com.alpinefitness.app.data.TrackerEntryResponse
 import com.alpinefitness.app.ui.HealthProfileViewModel
@@ -133,6 +134,9 @@ private fun defForKey(key: String?): WorkoutDef =
 
 private fun defForLabel(label: String?): WorkoutDef =
     workoutTypes.firstOrNull { it.key == label || it.label.equals(label, ignoreCase = true) }
+        ?: label?.trim()?.takeIf { it.isNotEmpty() }?.let {
+            workoutTypes.last().copy(key = it, label = it)
+        }
         ?: workoutTypes.last()
 
 fun estimateWorkoutCalories(weightKg: Double, durationMin: Double, detail: String?): Double {
@@ -423,8 +427,24 @@ private fun WorkoutDayRow(
                 }
             }
         }
-        TextButton(onClick = onEdit) { Text("Edit") }
-        TextButton(onClick = onDelete) { Text("Delete") }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onEdit) {
+                Icon(
+                    painterResource(R.drawable.ic_editor),
+                    "Edit",
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    painterResource(R.drawable.ic_delete),
+                    "Delete",
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
     }
 }
 

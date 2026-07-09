@@ -70,6 +70,27 @@ class CoachChatIntegrationTest {
         .andExpect(jsonPath("$[0].unreadCount").value(0));
   }
 
+  @Test
+  void nonParticipantsCannotReadConversationMessages() throws Exception {
+    String clientToken = register("chat-owner", "chat-owner@example.com");
+    String outsiderToken = register("chat-outsider", "chat-outsider@example.com");
+    register("chat-private-coach", "chat-private-coach@example.com");
+    UserAccount coach = users.findByUsernameIgnoreCase("chat-private-coach").orElseThrow();
+    coach.promoteToCoach();
+    users.flush();
+
+    String conversationsJson = mockMvc.perform(get("/api/coach-chat/conversations")
+            .header("Authorization", bearer(clientToken)))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    long conversationId = objectMapper.readTree(conversationsJson).get(0).path("id").asLong();
+
+    mockMvc.perform(get("/api/coach-chat/conversations/{id}/messages", conversationId)
+            .header("Authorization", bearer(outsiderToken)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value("COACH_CONVERSATION_NOT_FOUND"));
+  }
+
   private String register(String username, String email) throws Exception {
     String response = mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)

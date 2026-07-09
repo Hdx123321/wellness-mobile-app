@@ -139,6 +139,20 @@ class TrackerIntegrationTest {
         .andExpect(jsonPath("$.content[0].amount").value(71.8));
   }
 
+  @Test
+  void creatingSleepAgainOnTheSameDayUpdatesTheExistingEntry() throws Exception {
+    String token = register("dailysleep");
+    JsonNode first = createEntry(token, "SLEEP", "7.5", null);
+    JsonNode second = createEntry(token, "SLEEP", "8.0", null);
+
+    org.junit.jupiter.api.Assertions.assertEquals(first.path("id").asLong(), second.path("id").asLong());
+    mockMvc.perform(get("/api/tracker-entries?type=SLEEP")
+            .header("Authorization", bearer(token)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].amount").value(8.0));
+  }
+
   private JsonNode createEntry(String token, String type, String amount, String detail) throws Exception {
     String response = mockMvc.perform(post("/api/tracker-entries")
             .header("Authorization", bearer(token))

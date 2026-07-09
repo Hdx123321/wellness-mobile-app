@@ -37,12 +37,12 @@ public class TrackerService {
   @Transactional
   public TrackerEntryResponse create(Long userId, TrackerEntryRequest request) {
     validate(request);
-    if (request.type() == TrackerType.WEIGHT) {
+    if (request.type() == TrackerType.WEIGHT || request.type() == TrackerType.SLEEP) {
       Instant dayStart = request.recordedAt().atZone(ZoneOffset.UTC).toLocalDate()
           .atStartOfDay(ZoneOffset.UTC).toInstant();
       return entries
           .findFirstByUserIdAndTrackerTypeAndRecordedAtGreaterThanEqualAndRecordedAtLessThanOrderByIdAsc(
-              userId, TrackerType.WEIGHT, dayStart, dayStart.plus(Duration.ofDays(1)))
+              userId, request.type(), dayStart, dayStart.plus(Duration.ofDays(1)))
           .map(existing -> {
             existing.update(request.type(), request.recordedAt(), normalizedAmount(request.amount()),
                 normalized(request.detail()), normalized(request.notes()));

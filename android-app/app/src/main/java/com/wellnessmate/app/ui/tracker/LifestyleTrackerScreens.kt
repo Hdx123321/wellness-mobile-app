@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.alpinefitness.app.R
 import com.alpinefitness.app.data.TrackerEntryRequest
 import com.alpinefitness.app.data.TrackerEntryResponse
 import com.alpinefitness.app.reminder.ReminderScheduler
@@ -332,11 +333,14 @@ fun SleepTrackerScreen(
     var sleepGoalMinutes by rememberSaveable { mutableStateOf(loadIntSetting(context, "sleep_goal_minutes", 480)) }
     var showSleepGoalEditor by rememberSaveable { mutableStateOf(false) }
     val entries = state.entries.filter { it.type == "SLEEP" && entryDate(it) == selectedDate }
-    val hours = entries.sumOf { it.amount }
+    val selectedEntry = entries.maxByOrNull { it.recordedAt }
+    val hours = selectedEntry?.amount ?: 0.0
     val goal = sleepGoalMinutes / 60.0
     val progress = (hours / goal).toFloat().coerceIn(0f, 1f)
     val week = (6 downTo 0).map { selectedDate.minusDays(it.toLong()) }.map { date ->
-        date to state.entries.filter { it.type == "SLEEP" && entryDate(it) == date }.sumOf { it.amount }
+        date to (state.entries
+            .filter { it.type == "SLEEP" && entryDate(it) == date }
+            .maxByOrNull { it.recordedAt }?.amount ?: 0.0)
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F6FA))) {
@@ -363,8 +367,13 @@ fun SleepTrackerScreen(
                                 }
                                 Text("Sleep goal", color = Color(0xFF7D8494))
                             }
-                            TextButton(onClick = { showSleepGoalEditor = true }) {
-                                Text("Edit")
+                            IconButton(onClick = { showSleepGoalEditor = true }) {
+                                Icon(
+                                    painterResource(R.drawable.ic_editor),
+                                    "Edit sleep goal",
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
                             }
                         }
                         LinearProgressIndicator(
@@ -413,7 +422,7 @@ fun SleepTrackerScreen(
             }
             if (state.loading) {
                 item { LoadingState() }
-            } else if (entries.isEmpty()) {
+            } else if (selectedEntry == null) {
                 item {
                     Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                         Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -423,14 +432,14 @@ fun SleepTrackerScreen(
                     }
                 }
             } else {
-                items(entries, key = { it.id }) { entry ->
-                    EntrySummaryCard(entry, onEdit = { onEdit(entry) }, onDelete = { viewModel.delete(entry.id) })
+                item(key = selectedEntry.id) {
+                    SleepSummaryCard(selectedEntry, onEdit = { onEdit(selectedEntry) })
                 }
             }
             item { Spacer(Modifier.height(88.dp)) }
         }
         FloatingActionButton(
-            onClick = { onAdd("SLEEP") },
+            onClick = { selectedEntry?.let(onEdit) ?: onAdd("SLEEP") },
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
             containerColor = Color(0xFF5DB130),
         ) { Text("+", style = MaterialTheme.typography.headlineMedium, color = Color.White) }
@@ -640,7 +649,19 @@ private fun SettingsRow(title: String, value: String, onClick: (() -> Unit)? = n
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(if (onClick != null) "$value  Edit" else value, color = Color(0xFF9AA0AE))
+            if (onClick != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(value, color = Color(0xFF9AA0AE))
+                    Icon(
+                        painterResource(R.drawable.ic_editor),
+                        "Edit",
+                        modifier = Modifier.padding(start = 8.dp).size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else {
+                Text(value, color = Color(0xFF9AA0AE))
+            }
         }
     }
 }
@@ -846,6 +867,7 @@ private fun EntrySummaryCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val amountText = if (entry.type == "SLEEP") formatSleep(entry.amount) else "${formatAmount(entry.amount)} ${entry.unit}"
     Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -856,9 +878,55 @@ private fun EntrySummaryCard(
                 Text(entry.detail ?: entry.type.lowercase().replaceFirstChar(Char::uppercase), fontWeight = FontWeight.Medium)
                 Text(formatTime(entry.recordedAt), color = Color(0xFF8E93A3))
             }
-            Text("${formatAmount(entry.amount)} ${entry.unit}")
-            TextButton(onClick = onEdit) { Text("Edit") }
-            TextButton(onClick = onDelete) { Text("Delete") }
+            Text(amountText)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        painterResource(R.drawable.ic_editor),
+                        "Edit",
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        painterResource(R.drawable.ic_delete),
+                        "Delete",
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SleepSummaryCard(
+    entry: TrackerEntryResponse,
+    onEdit: () -> Unit,
+) {
+    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Today sleep", fontWeight = FontWeight.Medium)
+                entry.notes?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, color = Color(0xFF8E93A3))
+                }
+            }
+            Text(formatSleep(entry.amount), fontWeight = FontWeight.SemiBold)
+            IconButton(onClick = onEdit) {
+                Icon(
+                    painterResource(R.drawable.ic_editor),
+                    "Edit",
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }

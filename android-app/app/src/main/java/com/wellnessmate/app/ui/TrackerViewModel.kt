@@ -117,7 +117,11 @@ class TrackerViewModel(private val repository: TrackerRepository) : ViewModel() 
                 onSuccess = {
                     _state.value = _state.value.copy(saving = false)
                     val savedDate = Instant.parse(request.recordedAt).atZone(ZoneId.systemDefault()).toLocalDate()
-                    if (request.type == "WEIGHT") loadWeightWindow(savedDate) else loadDate(savedDate)
+                    when (request.type) {
+                        "WEIGHT" -> loadWeightWindow(savedDate)
+                        "SLEEP" -> loadRollingWindow("SLEEP", savedDate, 7)
+                        else -> loadDate(savedDate)
+                    }
                     onSaved()
                 },
                 onFailure = { _state.value = _state.value.copy(saving = false, error = it.message) },
