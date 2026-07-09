@@ -1,97 +1,151 @@
 # WellnessMate AI
 
-WellnessMate AI is an integrated Kotlin Android and Java Spring Boot application for recording wellness data and receiving non-diagnostic AI wellness guidance.
+WellnessMate AI is a full-stack mobile health and fitness application. It combines an Android client, a Spring Boot backend, tracker data storage, coach-plan workflows, coach messaging, and AI-assisted wellness features.
 
-## Current status
+The app is designed around a simple daily loop: users complete onboarding, record health data, review visual tracker summaries, receive AI-supported advice, and communicate with coaches or follow training plans.
 
-Stage 1 is complete:
+> This project is for wellness tracking and coursework demonstration. It does not provide medical diagnosis, prescription, emergency guidance, or clinical treatment.
 
-- Spring Boot modular-monolith skeleton with Actuator, JPA, Flyway, and MySQL configuration.
-- Initial schema for users, wellness records, chat history, and recommendations.
-- Jetpack Compose Android skeleton that calls the backend health endpoint.
-- Docker Compose development environment.
+## Screenshots
 
-Backend slice B1 is also complete:
+<p align="center">
+  <img src="docs/screenshots/home-overview.png" width="220" alt="Home overview" />
+  <img src="docs/screenshots/tracker-cards.png" width="220" alt="Tracker cards" />
+  <img src="docs/screenshots/food-tracker.png" width="220" alt="Food tracker" />
+  <img src="docs/screenshots/health-profile.png" width="220" alt="Health profile" />
+</p>
 
-- BCrypt client registration and username/email login.
-- HS256 JWT access tokens and stateless API protection.
-- First-login onboarding question catalog and private user profile.
-- Login responses expose `onboardingRequired` so Android can enforce the onboarding flow.
+| Home overview | Tracker cards | Food tracker | Health profile |
+|---|---|---|---|
+| Daily health summary, selected date, food/weight/workout entry points. | Compact tracker cards with charts and optional tracker tiles. | Food catalog, nutrition totals, photo-recognition entry point. | Height, weight, BMR, BMI range, fat-burning heart-rate estimate, target progress. |
 
-Backend slice B2 built-in trackers are complete:
+## Key features
 
-- Food, weight, workout, steps, sleep, and water type metadata.
-- JWT-owned tracker entry create, read, update, delete, pagination, type filtering, and date filtering.
-- Type-specific units and validation.
-- A built-in bilingual food catalog with server-calculated calories, protein, carbohydrates, fat, and fiber.
-- Camera-assisted food recognition through a backend-only OpenAI Responses API integration. AI estimates must be reviewed and confirmed before they are saved.
+- Account registration, login, JWT session restore, logout, and first-login onboarding.
+- Onboarding questionnaire for basic user profile data, goal weight, target period, daily routine, sport preference, and app needs.
+- Home dashboard with selected-date data, health summary card, and tracker entry points.
+- Built-in trackers for food, weight, workout, steps, sleep, water, medicine, heart rate, and blood glucose.
+- Food tracker with meal sections, built-in food catalog, serving-size selection, nutrition calculation, and photo-based food recognition entry.
+- Weight tracker with daily single-record behavior and seven-day chart visualization.
+- Workout tracker with weekly activity summary, calorie chart, and exercise selection flow.
+- Health profile page with calculated BMI, basal metabolism estimate, fat-burning heart-rate range, and weight-goal progress.
+- AI Advisor chat module with persisted sessions and backend-side context from user profile and tracker history.
+- Training plan module for coach-published plans, user check-ins, coach contact, and plan subscription state.
+- Coach chat module with user/coach conversation isolation and unread-message indicators.
+- Backend deployment through Docker Compose, MySQL, Caddy HTTPS reverse proxy, and a DigitalOcean Droplet test server.
 
-Android core flow is implemented:
+## Tech stack
 
-- Registration/login, encrypted JWT session restore, first-login onboarding, and logout.
-- Home page for the six built-in trackers, with a current-health summary linked to the private health profile.
-- Health profile cards for height, latest weight, BMI, estimated basal metabolism, estimated moderate-intensity heart-rate zone, and weight-goal progress.
-- A scrollable height editor and direct routing from the weight card to the Weight tracker.
-- Per-tracker month calendars, dates-with-data markers, seven-day charts, selected-day summaries, and today-only editing.
-- A dedicated food flow with catalog search, serving weights, automatic nutrient totals, calendar/chart views, and CameraX photo capture.
-- Bottom navigation between trackers and persisted coach chat; active conversations poll for new messages every three seconds.
-- Three primary tabs: Home, AI Advisor, and Coach. The AI advisor persists chat and receives private profile plus recent tracker context through the backend-only Responses API integration.
-- Avatar-based account management for profile access, a persisted daily local-notification reminder, and logout.
-- One global date picker controls the day shown by Home, tracker details, and Food instead of repeating calendars on each tracker screen.
-- A reference-style Food calorie card showing intake, remaining estimated budget, exercise-calorie availability, and carbohydrate/protein/fat progress.
-- Navigation Compose with debug API base URL `http://10.0.2.2:18080/`.
+### Android client
 
-The Android core flow has been interaction-tested on a Pixel 10 Pro API 36.1 AVD: registration, onboarding, tracker create/edit/delete, calendar/chart navigation, coach messaging, encrypted session restore, logout, and login all passed.
+- Kotlin
+- Jetpack Compose
+- Navigation Compose
+- ViewModel + Kotlin coroutines
+- Retrofit / OkHttp
+- Encrypted local token storage
+- CameraX for food-photo capture
 
-The project builds successfully, Flyway migrations run against MySQL 8.4, and the containerized health endpoint reports `UP`. Device capabilities, coach chat, and general AI recommendations remain later slices.
+### Backend
+
+- Java 21
+- Spring Boot
+- Spring Security with JWT
+- Spring Data JPA / Hibernate
+- Flyway database migrations
+- MySQL 8.4 in production-style deployment
+- H2 for integration tests
+- Maven
+
+### AI and deployment
+
+- AI chat and food-photo analysis use an OpenAI-compatible Chat Completions style backend integration.
+- Food image nutrition estimation supports Volcengine Doubao Ark model APIs.
+- API keys are backend-only and must not be embedded in the Android app.
+- Cloud test deployment uses DigitalOcean Droplet + Docker Compose + Caddy HTTPS.
 
 ## Repository layout
 
 ```text
-android-app/     Kotlin + Jetpack Compose client
-backend/         Java 21 + Spring Boot backend
-docs/            Architecture, API, and authorship records
-infra/           Infrastructure support files
+android-app/     Android Kotlin + Jetpack Compose client
+backend/         Java Spring Boot backend
+docs/            Technical documents and README screenshots
+icons/           App and UI icon assets
+scripts/         Helper scripts for deployment and testing
+dist/            Locally generated APK artifacts, if present
 ```
 
-## Prerequisites
+## Local setup
 
-- Java 21 or newer (the build targets Java 21)
+### 1. Prepare environment
+
+Required tools:
+
+- Java 21
+- Android Studio with Android SDK / AVD
 - Docker Desktop
-- Android SDK API 36.1
+- Git
 
-The Android minimum SDK is provisionally set to 26 and must be confirmed by the team. Emulator traffic uses `http://10.0.2.2:18080` only in debug builds; release builds continue to require HTTPS.
-
-## Run the backend stack
+### 2. Configure backend environment
 
 ```powershell
 Copy-Item .env.example .env
+```
+
+Edit `.env` for local secrets and optional AI settings. Do not commit `.env`.
+
+### 3. Start backend locally
+
+```powershell
 docker compose up --build
 ```
 
-To enable food-photo analysis, set backend-only AI credentials in the untracked `.env` file. Food-photo analysis can use the shared `LLM_API_KEY` / `LLM_MODEL`, or its own `FOOD_LLM_API_KEY` / `FOOD_LLM_MODEL` / `FOOD_LLM_API_BASE_URL` override. For Doubao Ark OpenAI-compatible Responses usage, set `FOOD_LLM_API_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3` and `FOOD_LLM_MODEL=doubao-seed-2-0-lite-260428`. Do not use `https://ark.cn-beijing.volces.com/api/v3` for this project because it can incur extra charges. Keys are used only by the backend and must never be embedded in the Android app.
+Backend health check:
 
-Backend health: `http://localhost:18080/actuator/health`
+```text
+http://localhost:18080/actuator/health
+```
 
-The project defaults to host port 18080 because port 8080 is occupied in the current development environment. Override `BACKEND_PORT` and Android `-PAPI_BASE_URL` together when using another port.
+### 4. Run Android app
 
-## Verify locally
+Open `android-app/` in Android Studio, select an emulator, and run the `app` configuration.
+
+For an emulator calling the local backend, build with:
+
+```powershell
+cd android-app
+.\gradlew.bat :app:assembleDebug -PAPI_BASE_URL=http://10.0.2.2:18080/
+```
+
+For the cloud backend, build with:
+
+```powershell
+cd android-app
+.\gradlew.bat :app:assembleDebug -PAPI_BASE_URL=https://api.hdx-lab.org/
+```
+
+## Validation
+
+Run backend tests:
 
 ```powershell
 cd backend
 .\mvnw.cmd test
-
-cd ..\android-app
-.\gradlew.bat testDebugUnitTest assembleDebug
 ```
 
-Do not commit `.env`, API keys, JWT secrets, APK files, build directories, or database volumes.
+Compile Android debug Kotlin:
 
-## Configuration still required
+```powershell
+cd android-app
+.\gradlew.bat :app:compileDebugKotlin
+```
 
-- Team name, member names, feature ownership, and final authorship mapping.
-- Confirmed Android minimum SDK and final physical-device demo target.
-- A backend-only OpenAI API credential for live food-photo analysis.
-- Decision on optional Python agentic AI.
+## Security notes
 
-No health advice produced by this project should be presented as medical diagnosis, prescription, or emergency care.
+- Do not commit `.env`, API keys, JWT secrets, database volumes, local build outputs, or signing credentials.
+- AI calls are routed through the backend so mobile clients do not receive model API keys.
+- User-owned tracker data and chat data should be accessed only through authenticated backend APIs.
+
+## Project status
+
+The current version implements the core Android wellness loop, backend account/tracker/chat/plan APIs, AI Advisor integration points, food-photo nutrition analysis support, and cloud deployment workflow. Remaining production work would include stronger privacy controls, broader device testing, App Store style release signing, monitoring, and formal medical-safety review if the app were expanded beyond coursework use.
