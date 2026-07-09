@@ -304,6 +304,9 @@ fun MainTrackerNav(
                         )
                     }
                     "SLEEP" -> {
+                        LaunchedEffect(selectedDate) {
+                            viewModel.loadRollingWindow("SLEEP", selectedDate, 7)
+                        }
                         SleepTrackerScreen(
                             viewModel = viewModel,
                             selectedDate = selectedDate,

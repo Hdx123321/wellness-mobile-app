@@ -64,6 +64,10 @@ fun AiAdvisorScreen(
     var renameId by rememberSaveable { mutableStateOf<Long?>(null) }
     var renameDraft by rememberSaveable { mutableStateOf("") }
 
+    LaunchedEffect(Unit) {
+        viewModel.refreshSessions()
+    }
+
     LaunchedEffect(state.messages.size, state.streamingContent.length) {
         if (state.messages.isNotEmpty() || state.streamingContent.isNotEmpty()) {
             listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
@@ -137,7 +141,10 @@ fun AiAdvisorScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("AI wellness advisor", style = MaterialTheme.typography.headlineMedium)
-                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                IconButton(onClick = {
+                    viewModel.refreshSessions()
+                    scope.launch { drawerState.open() }
+                }) {
                     Icon(
                         painterResource(com.alpinefitness.app.R.drawable.ic_more),
                         contentDescription = "Chats",
